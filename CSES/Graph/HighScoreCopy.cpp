@@ -1,7 +1,5 @@
 #include <bits/stdc++.h>
-#define endl "\n"
 using namespace std;
-#define int long long int
  
 const int INF = 1e17;
 const int NINF = INF*(-1);

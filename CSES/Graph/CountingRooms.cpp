@@ -3,6 +3,8 @@
 typedef long long ll;
 using namespace std;
 
+//This is a simple problem of finding number of connected components in a grids
+
 class Solution {
 public:
     ll countRooms(vector<vector<char>>& grid) {
@@ -12,6 +14,7 @@ public:
         for(int i=0; i<m; i++) {
             for(int j=0; j<n; j++) {
                 if(!visited[i][j] && grid[i][j]=='.') {
+                    //No of connected component = No of dfs call from this loop
                     count++;
                     dfs(i, j, visited, grid);
                 }
@@ -24,6 +27,7 @@ public:
         if(i<0 || j<0 || i>grid.size()-1 || j>grid[0].size()-1 || grid[i][j]!='.' || visited[i][j]) return;
 
         visited[i][j] = true;
+        //Walking through the room as defined in the problem
         dfs(i+1, j, visited, grid);
         dfs(i-1, j, visited, grid);
         dfs(i, j+1, visited, grid);

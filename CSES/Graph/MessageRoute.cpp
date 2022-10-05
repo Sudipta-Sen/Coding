@@ -32,7 +32,7 @@ public:
             return;
         }
 
-        //print path length and nodes
+        //Backtrack using parent node to find the path
         vector<int> temp;
         int i = nodes-1;
         while(i!=-1) {
@@ -40,11 +40,12 @@ public:
             i = parent[i];
         }
 
+        //Print the path
         cout<<temp.size()<<endl;
-        for(i=temp.size()-1; i>0; i--) {
+        for(i=temp.size()-1; i>=0; i--) {
             cout<<temp[i]<<" ";
         }
-        cout<<temp[0]<<endl;
+        cout<<endl;
     }
 };
 

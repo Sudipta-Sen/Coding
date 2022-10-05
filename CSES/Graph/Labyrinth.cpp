@@ -2,7 +2,7 @@
 #include<bits/stdc++.h>
 typedef long long ll;
 using namespace std;
-
+//change
 class node{
 public:
     int x, y;

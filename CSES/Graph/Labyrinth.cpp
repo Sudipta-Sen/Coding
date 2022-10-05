@@ -14,6 +14,9 @@ public:
     }
 
 };
+
+//This is a problem of bfs traversal
+
 class Solution {
     vector<vector<int>> paths;
 public:
@@ -71,6 +74,8 @@ int main() {
     cin >> n >> m;
     vector<vector<char>> grid(n, vector<char>(m));
     vector<int> start(2), end(2);
+
+    //Grid Input
     for(int i=0; i<n; i++) {
         for(int j=0; j<m; j++) {
             cin >> grid[i][j];

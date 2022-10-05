@@ -1,10 +1,13 @@
 #include<iostream>
 #include<bits/stdc++.h>
 using namespace std;
+
+//Standard template for union find
 class unionFind {
-public:
+private:
     int size;
     int *rank, *parent;
+public:
     unionFind(int n) {
         size = n;
         rank = new int[n+1];
@@ -38,6 +41,10 @@ public:
             rank[pb]++;
         }
     }
+
+    int getCurSizeOfIndividualParent() {
+        return size;
+    }
 };
 
 class Solution {
@@ -47,13 +54,19 @@ public:
         for(auto e:edges) {
             uf->unionNode(e[0], e[1]);
         }
-        int reqEd = uf->size-1;
+
+        //No of roads required to connect all cites is one less than the no of connected components
+        int reqEd = uf->getCurSizeOfIndividualParent()-1;
         set<int> st;
+
+        //Get parent of all the connected components
         for(int i=1; i<=nodes; i++) {
             st.insert(uf->findParent(i));
         }
         cout<<reqEd<<endl;
         auto i=st.begin();
+
+        //Connect parents of two connected components
         while(reqEd--) {
             cout<<*i;
             i++;

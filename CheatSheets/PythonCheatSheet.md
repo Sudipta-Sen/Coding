@@ -217,3 +217,46 @@ counter = Counter(iterable)
 | `counter.most_common(n)`    |	Returns a list of the n most common elements and their counts   |
 | `counter.update(iterable)`  |	Updates the counter with elements from the iterable |
 | `counter.subtract(iterable)`  |	Subtracts elements from the iterable    |
+
+## 11. Math Functions (math Module)
+
+First, you need to import the math module:
+```Python
+import math
+```
+
+| Function            | Description                                    | Example                        | Result    |
+|---------------------|------------------------------------------------|--------------------------------|-----------|
+| `math.sqrt(x)`       | Square root of `x`                             | `math.sqrt(16)`                | `4.0`     |
+| `math.pow(x, y)`     | `x` raised to the power `y`                    | `math.pow(2, 3)`               | `8.0`     |
+| `math.factorial(x)`  | Factorial of `x` (`x!`)                        | `math.factorial(5)`            | `120`     |
+| `math.fabs(x)`       | Absolute value of `x` (float)                  | `math.fabs(-5.3)`              | `5.3`     |
+| `math.floor(x)`      | Largest integer less than or equal to `x`      | `math.floor(3.9)`              | `3`       |
+| `math.ceil(x)`       | Smallest integer greater than or equal to `x`  | `math.ceil(3.1)`               | `4`       |
+| `math.gcd(a, b)`     | Greatest common divisor of `a` and `b`         | `math.gcd(8, 12)`              | `4`       |
+| `math.log(x, base)`  | Logarithm of `x` to the given `base`           | `math.log(8, 2)`               | `3.0`     |
+| `math.exp(x)`        | Exponential of `x` (`e^x`)                     | `math.exp(2)`                  | `7.389`   |
+| `math.degrees(x)`    | Convert radians to degrees                     | `math.degrees(math.pi)`        | `180.0`   |
+| `math.radians(x)`    | Convert degrees to radians                     | `math.radians(180)`            | `3.14159` |
+
+## 12. Random Numbers (Using random Module)
+
+```Python
+import random
+```
+
+| Function                         | Description                                      | Example                            | Result                        |
+|---------------------------------- |--------------------------------------------------|------------------------------------ |-------------------------------|
+| `random.random()`                 | Returns a random float between 0 and 1           | `random.random()`                  | `0.357` (random float)        |
+| `random.randint(a, b)`            | Random integer between `a` and `b` (inclusive)   | `random.randint(1, 10)`            | `5` (random integer)          |
+| `random.uniform(a, b)`            | Random float between `a` and `b`                 | `random.uniform(1, 10)`            | `6.3` (random float)          |
+| `random.choice(sequence)`         | Random element from a sequence                   | `random.choice([1, 2, 3])`         | `2` (random element)          |
+| `random.shuffle(sequence)`        | Shuffle the elements in the sequence in place    | `random.shuffle(my_list)`          | `my_list` is shuffled         |
+| `random.sample(sequence, k)`      | Returns `k` random elements from a sequence      | `random.sample([1, 2, 3], 2)`      | `[1, 3]`                      |
+
+## 13. Rounding Functions
+
+| Function        | Description                                  | Example               | Result |
+|-----------------|----------------------------------------------|-----------------------|--------|
+| `round(x)`      | Rounds `x` to the nearest integer            | `round(3.6)`          | `4`    |
+| `round(x, n)`   | Rounds `x` to `n` decimal places             | `round(3.14159, 2)`   | `3.14` |

@@ -1,5 +1,20 @@
 # Python Cheatsheet for DSA
 
+## Table of Contents
+> 1. [List (Similar to ArrayList in Java)](#1-list-similar-to-arraylist-in-java)
+> 2. [Stack (Using list or collections.deque)](#2-stack-using-list-or-collectionsdeque)
+> 3. [Queue (Using collections.deque or queue.Queue)](#3-queue-using-collectionsdeque-or-queuequeue)
+> 4. [HashMap (Using dict, Similar to Java HashMap)](#4-hashmap-using-dict-similar-to-java-hashmap)
+> 5. [Set (Similar to Java HashSet)](#5-set-similar-to-java-hashset)
+> 6. [Priority Queue (Min-Heap, Using heapq)](#6-priority-queue-min-heap-using-heapq)
+> 7. [Linked List (Using Custom Class)](#7-linked-list-using-custom-class)
+> 8. [Deque (Double-ended Queue using collections.deque)](#8-deque-double-ended-queue-using-collectionsdeque)
+> 9. [OrderedDict (Using collections.OrderedDict)](#9-ordereddict-using-collectionsordereddict)
+> 10. [Counter (Using collections.Counter)](#10-counter-using-collectionscounter)
+> 11. [Math Functions (math Module)](#11-math-functions-math-module)
+> 12. [Random Numbers (Using random Module)](#12-random-numbers-using-random-module)
+> 13. [Rounding Functions](#13-rounding-functions)
+
 ##  1. List (Similar to ArrayList in Java)
 
 ### Definition: Dynamic array, allows resizing and various operations.

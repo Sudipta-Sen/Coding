@@ -275,3 +275,35 @@ import random
 |-----------------|----------------------------------------------|-----------------------|--------|
 | `round(x)`      | Rounds `x` to the nearest integer            | `round(3.6)`          | `4`    |
 | `round(x, n)`   | Rounds `x` to `n` decimal places             | `round(3.14159, 2)`   | `3.14` |
+
+## 14. Binary Search
+
+bisect module is used to perform binary search on sorted sequence.
+
+### Common Methods
+
+| Syntax    | Description   |   Time Complexity |
+|-----------|---------------|-------------------|
+| `bisect_left(sorted_list, x, lo=0, hi=len(sorted_list))` |  Returns the index where to insert `x` into a sorted list. If `x` already exists in list, it returns the index of the first occurrence. | O(logn) |
+| `bisect_right(sorted_list, x, lo=0, hi=len(sorted_list))` | Similar to `bisect_left`, but returns the index where you can insert an element `x` in the list to the right of any existing entries of `x`. | O(logn) |
+| `insort_left(sorted_list, x, lo=0, hi=len(sorted_list))` | Inserts `x` into the sorted list at the position found by `bisect_left` | O(logn) |
+| `insort_right(sorted_list, x, lo=0, hi=len(sorted_list))` | Inserts `x` into the sorted list at the position found by `bisect_right` | O(logn) |
+
+```Python
+import bisect
+
+arr = [1, 3, 4, 4, 5, 7, 9]
+
+# Find the insertion point of 4
+index = bisect.bisect_left(arr, 4)
+print(index)  # Output: 2
+
+index = bisect.bisect_right(arr, 4)
+print(index)  # Output: 4
+
+bisect.insort_left(arr, 6)
+print(arr)  # Output: [1, 3, 4, 4, 5, 6, 7, 9]
+
+bisect.insort_right(arr, 4)
+print(arr)  # Output: [1, 3, 4, 4, 4, 5, 7, 9]
+```

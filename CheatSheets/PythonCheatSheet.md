@@ -14,6 +14,7 @@
 > 11. [Math Functions (math Module)](#11-math-functions-math-module)
 > 12. [Random Numbers (Using random Module)](#12-random-numbers-using-random-module)
 > 13. [Rounding Functions](#13-rounding-functions)
+> 14. [Binary Search](#14-binary-search)
 
 ##  1. List (Similar to ArrayList in Java)
 
@@ -21,6 +22,21 @@
 
 ```python
 lst = []  # Empty list
+```
+
+### Create 2D List
+```Python
+rows = 3
+cols = 4
+dp = []
+for _ in range(rows):
+    dp.append([0]*cols)
+print(dp) # Output -- [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+# Oneliner
+dp = [[4]*cols]*rows # Output -- [[4, 4, 4, 4], [4, 4, 4, 4], [4, 4, 4, 4]] 
+print(dp)
+
 ```
 
 ### Common Methods:

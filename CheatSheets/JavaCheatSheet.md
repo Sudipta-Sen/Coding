@@ -6,6 +6,7 @@
 > 3. [String Class](#3-string-class)
 > 4. [Arrays](#4-arrays)
 > 5. [Custom Sort](#5-custom-sort)
+> 6. [lower_bound using binarySearch](#6-lower_bound-using-binarysearch)
 
 ## 1. Java Collection Framework Overview
 ![plot](JavaCollection.svg)
@@ -21,6 +22,10 @@
 | `min(Collection<T> c)` | Returns the smallest element |`Collections.min(list)`	| Smallest element |
 | `max(Collection<T> c)` |	Returns the largest element |	Collections.max(list)	| Largest element |
 | `frequency(Collection<T> c, Object o)` |	Returns the frequency of o |	Collections.frequency(list, 1) |	Count of 1 |
+
+binarySearch returns -- 
+- rightmost index of the element if found
+- -(insertion_point + 1), where the insertion_point is where the element could be inserted if not found 
 
 ```Java
 List<Integer> list = Arrays.asList(3, 1, 2);
@@ -95,6 +100,32 @@ public class Main {
     public static int compareByLength(String s1, String s2) {
         return Integer.compare(s1.length(), s2.length());  // Ascending by length
     }
+}
+
+```
+
+## 6. lower_bound using binarySearch
+Java does not have a specific lower_bound method in java but we can implement it using `binarySearch()`
+
+```Java
+public void example(String[] args) {
+    List<Integer> list = Arrays.asList(1, 3, 3, 5, 7, 9);
+
+    int lb1 = lowerBound(list, 6);
+    System.out.println(lb1) // Output: 4
+    int lb2 = lowerBound(list, 3);
+    System.out.println(lb2) // Output: 2
+
+}
+
+public static int lowerBound(List<Integer> list, int value) {
+    int index = Collections.binarySearch(list, value);
+
+    // If index is negative, binarySearch returns -(insertion_point + 1)
+    if (index < 0) {
+        index = -(index + 1);  // This gives us the insertion point
+    }
+    return index;  // This is the lower bound index
 }
 
 ```

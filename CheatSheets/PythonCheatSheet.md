@@ -15,6 +15,7 @@
 > 12. [Random Numbers (Using random Module)](#12-random-numbers-using-random-module)
 > 13. [Rounding Functions](#13-rounding-functions)
 > 14. [Binary Search](#14-binary-search)
+> 15. [Customize sort function](#15-customize-sort-function)
 
 ##  1. List (Similar to ArrayList in Java)
 
@@ -322,4 +323,86 @@ print(arr)  # Output: [1, 3, 4, 4, 5, 6, 7, 9]
 
 bisect.insort_right(arr, 4)
 print(arr)  # Output: [1, 3, 4, 4, 4, 5, 7, 9]
+```
+
+## 15. Customize sort function 
+
+### Sorting Based on a Custom Key
+
+You can define a custom key function to determine the sort order. For example, sorting a list of tuples based on the second element of each tuple.
+
+```Python
+# List of tuples
+data = [(1, 'apple'), (3, 'banana'), (2, 'orange')]
+
+# Sort by the second element (string) in each tuple
+sorted_data = sorted(data, key=lambda x: x[1])
+
+print(sorted_data)  # Output: [(1, 'apple'), (3, 'banana'), (2, 'orange')]
+```
+
+### Sorting in Descending Order
+By default, sorted() sorts in ascending order. To sort in descending order, set reverse=True
+
+```Python
+numbers = [3, 1, 4, 1, 5, 9]
+# Sort in descending order
+sorted_numbers = sorted(numbers, reverse=True)
+
+print(sorted_numbers)  # Output: [9, 5, 4, 3, 1, 1]
+```
+
+### Custom Sort Based on Absolute Value
+
+```Python
+nums = [-10, 7, -3, 4, -8]
+
+# Sort by absolute value
+sorted_nums = sorted(nums, key=abs)
+
+print(sorted_nums)  # Output: [-3, 4, 7, -8, -10]
+```
+
+### Sorting Strings by Length
+```Python
+words = ['banana', 'apple', 'grape', 'blueberry', 'kiwi']
+
+# Sort by length of the string
+sorted_words = sorted(words, key=len)
+
+print(sorted_words)  # Output: ['kiwi', 'apple', 'grape', 'banana', 'blueberry']
+```
+
+### Custom Comparator Using functools.cmp_to_key
+
+A comparator function compares two elements (x and y) at a time and returns:
+1. A negative number if x should come before y.
+2. A positive number if x should come after y.
+3. Zero if x and y are considered equal.
+
+```Python
+import functools
+ 
+l = [6, 8, 10, 23, -4, -7]
+ 
+def compare(x, y):
+    return x ** 3 - y ** 3
+ 
+sorted_l = sorted(l, key=functools.cmp_to_key(compare))
+print(sorted_l) # Output: [-7, -4, 6, 8, 10, 23]
+print(l) # Output: [6, 8, 10, 23, -4, -7]
+```
+
+### Sorting a List of Dictionaries
+
+```Python
+people = [{'name': 'John', 'age': 45},
+          {'name': 'Alice', 'age': 30},
+          {'name': 'Bob', 'age': 35}]
+
+# Sort by age
+sorted_people = sorted(people, key=lambda x: x['age'])
+
+print(sorted_people)
+# Output: [{'name': 'Alice', 'age': 30}, {'name': 'Bob', 'age': 35}, {'name': 'John', 'age': 45}]
 ```

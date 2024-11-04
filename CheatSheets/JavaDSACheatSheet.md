@@ -127,5 +127,83 @@ public static int lowerBound(List<Integer> list, int value) {
     }
     return index;  // This is the lower bound index
 }
+```
 
+## 7. String builder
+The `StringBuilder` class in Java is used to create mutable (modifiable) sequences of characters, which makes it more efficient for scenarios where a lot of string manipulation is needed.
+
+`StringBuilder` is not thread-safe. `StringBuffer` is a thread safe vesion of `StringBuilder`.
+
+### StringBuilder vs String
+
+- **String:** Immutable. Each time you modify a string, a new object is created, and the old string gets copied to the new object with the modifications. This inefficient in performance and memory.
+
+- **StringBuilder:** Mutable. String modifications happen in the same object, so it is more efficient for cases where many modifications are required
+
+### Intialization
+```Java
+StringBuilder sb = new StringBuilder();           // Creates an empty StringBuilder
+StringBuilder sb = new StringBuilder("Hello");    // Creates a StringBuilder with initial content
+```
+### Key Methods
+| Method |Description | Example | Output/Result |
+|------- |----------- |---------| --------------|
+| `append(String s)`                        | Appends string `s` to the end of the `StringBuilder`.     | `sb.append(" World");`                              | `Hello World`        |
+| `insert(int offset, String s)`            | Inserts string `s` at the specified index.                | `sb.insert(5, " Java");`                            | `Hello Java World`   |
+| `replace(int start, int end, String s)`   | Replaces the substring from `start` to `end` with `s`.    | `sb.replace(6, 10, "C++");`                         | `Hello C++ World`    |
+| `delete(int start, int end)`              | Deletes characters from `start` to `end`.                 | `sb.delete(5, 10);`                                 | `Hello World`        |
+| `deleteCharAt(int index)`                 | Deletes the character at the specified index.             | `sb.deleteCharAt(5);`                               | `HelloWorld`         |
+| `reverse()`                               | Reverses the entire string.                               | `sb.reverse();`                                     | `dlroW olleH`        |
+| `setCharAt(int index, char ch)`           | Changes the character at the specified index to `ch`.     | `sb.setCharAt(0, 'h');`                             | `hello World`        |
+| `substring(int start)`                    | Returns substring from `start` to the end.                | `sb.substring(6);`                                  | `World`              |
+| `substring(int start, int end)`           | Returns substring from `start` to `end`.                  | `sb.substring(0, 5);`                               | `Hello`              |
+| `charAt(int index)`                       | Returns the character at the specified index.             | `sb.charAt(1);`                                     | `e`                  |
+| `length()`                                | Returns the length of the `StringBuilder`.                | `sb.length();`                                      | `11`                 |
+| `capacity()`                              | Returns the current capacity of the `StringBuilder`.      | `sb.capacity();`                                    | Varies               |
+| `ensureCapacity(int minimumCapacity)`     | Ensures that the capacity is at least `minimumCapacity`.  | `sb.ensureCapacity(50);`                            | Adjusts capacity     |
+| `trimToSize()`                            | Reduces the storage size to the current content size.     | `sb.trimToSize();`                                  | Adjusts capacity     |
+| `toString` | Return string from the string builder object | `sb.toString()` ||
+
+### Usage Examples
+
+1. Appending Strings
+```Java
+StringBuilder sb = new StringBuilder("Hello");
+sb.append(" World");
+System.out.println(sb);  // Output: Hello World
+```
+
+2. Inserting a Substring
+```Java
+StringBuilder sb = new StringBuilder("Hello World");
+sb.insert(5, " Java");
+System.out.println(sb);  // Output: Hello Java World
+```
+
+3. Replacing a Substring
+```Java
+StringBuilder sb = new StringBuilder("Hello World");
+sb.replace(6, 11, "Java");
+System.out.println(sb);  // Output: Hello Java
+```
+
+4. Deleting a Substring
+```Java
+StringBuilder sb = new StringBuilder("Hello Java World");
+sb.delete(5, 10);
+System.out.println(sb);  // Output: Hello World
+```
+
+5. Reversing the String
+```Java
+StringBuilder sb = new StringBuilder("Hello World");
+sb.reverse();
+System.out.println(sb);  // Output: dlroW olleH
+```
+
+6. Modifying a Character
+```Java
+StringBuilder sb = new StringBuilder("Hello World");
+sb.setCharAt(6, 'J');
+System.out.println(sb);  // Output: Hello Jorld
 ```

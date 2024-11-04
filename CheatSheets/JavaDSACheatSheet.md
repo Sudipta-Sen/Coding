@@ -7,6 +7,7 @@
 > 4. [Arrays](#4-arrays)
 > 5. [Custom Sort](#5-custom-sort)
 > 6. [lower_bound using binarySearch](#6-lower_bound-using-binarysearch)
+> 7. [String builder](#7-string-builder)
 
 ## 1. Java Collection Framework Overview
 ![plot](JavaCollection.svg)

@@ -16,7 +16,30 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 ```
 
-## 3. Database Connection Setup
+## 3. Load Driver
+In mysql the driver name is `Driver` which is present in the package `com.mysql.jdbc`. There are two methods to load the driver
+
+**Method1:** 
+```Java
+Class.forName(<name_of_the_driver>)
+```
+
+Example:
+```Java
+Class.forName("com.mysql.jdbc.Driver")
+```
+
+**Method2:**
+```Java
+DriverManager.registerDriver(new <name_of_the_driver>)
+```
+
+Example:
+```Java
+DriverManager.registerDriver(new com.mysql.jdbc.Driver())
+```
+
+## 4. Database Connection Setup
 
 ### a. Connection URL Format:
 ```Java
@@ -24,11 +47,13 @@ String url = "jdbc:mysql://<hostname>:<port>/<database_name>?useSSL=false";
 ```
 
 Example:
+`mydatabase` is the name of the database, I am using.
 ```Java
 String url = "jdbc:mysql://localhost:3306/mydatabase?useSSL=false";
 ```
 
-### b. Driver and Connection Setup:
+### b. Connection Setup:
+`getConnection` is a static method
 ```Java
 String username = "root";
 String password = "password";
@@ -36,7 +61,7 @@ String password = "password";
 Connection connection = DriverManager.getConnection(url, username, password);
 ```
 
-## 4. Creating a Statement
+## 5. Creating a Statement
 
 ### a. Basic Statement
 Executes static SQL queries (hard-coded or built dynamically) where you directly concatenate values in the query.
@@ -85,7 +110,7 @@ connection.commit();
 | Batch Processing	| No batch support |	Supports batch execution |
 | Use Case	| Simple, one-time queries	| Frequently executed or dynamic queries |
 
-## 5. Execute Queries
+## 6. Execute Queries
 
 ### a. Execute a SELECT Query
 ```Java
@@ -130,7 +155,7 @@ while (resultSet.next()) {
 }
 ```
 
-## 6. Transaction Management
+## 7. Transaction Management
 ### a. Disabling Auto-Commit (start transaction)
 
 ```Java
@@ -164,4 +189,22 @@ if (connection != null) connection.close();
 - `SQLIntegrityConstraintViolationException`: Occurs when you try to insert duplicate keys.
 - `SQLSyntaxErrorException`: Syntax error in the SQL query.
 
+## 9. Summary
+Here is a summary of the whole flow
 
+- **`Load the JDBC Driver:`** There are two methods available to load the JDBC driver.
+    - `Class.forName(<name_of_the_driver>)`
+    - `DriverManager.registerDriver(new <name_of_the_driver>)`
+
+- **`Create a Query:`** Query can be created using one of the following:
+    - `Statement`
+    - `PreparedStatement`
+    - `CallableStatement`
+
+- **`Execute the Query:`** Depending on the type of query:
+    - Use `executeQuery()` for `SELECT` queries, which returns a `ResultSet`.
+    - Use `executeUpdate()` for `INSERT`, `UPDATE`, or `DELETE` queries, which returns an `integer` representing the number of affected rows.
+
+- **`Process the Result:`** 
+    - If the query is a `SELECT` query, process the `ResultSet`.
+    - For `INSERT`, `UPDATE`, or `DELETE` queries, processing the result is not required.

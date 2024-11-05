@@ -1,5 +1,17 @@
 # Java JDBC with MySQL CheatSheet
 
+## Table of Contents
+> 1. [Set mysql-connector.jar](#1-setting-up-the-mysql-connector-jar)
+> 2. [Required Libraries](#2-required-libraries)
+> 3. [Load Driver](#3-load-driver)
+> 4. [Database Connection Setup](#4-database-connection-setup)
+> 5. [Creating a Statement](#5-creating-a-statement)
+> 6. [Execute Queries](#6-execute-queries)
+> 7. [Transaction Management](#7-transaction-management)
+> 8. [Closing Resources](#8-closing-resources)
+> 9. [Common SQL Exceptions](#9-common-sql-exceptions)
+> 10. [Summary](#10-summary)
+
 ## 1. Setting up the MySQL Connector JAR
 
 - Download the MySQL Connector JAR file (e.g., `mysql-connector-java-8.x.x.jar`).
@@ -173,7 +185,7 @@ connection.commit();
 connection.rollback();
 ```
 
-## 7. Closing Resources
+## 8. Closing Resources
 
 Always close `Connection`, `Statement`, and `ResultSet` objects to avoid memory leaks:
 
@@ -183,27 +195,34 @@ if (statement != null) statement.close();
 if (connection != null) connection.close();
 ```
 
-## 8. Common SQL Exceptions
+## 9. Common SQL Exceptions
 
 - `SQLException`: Catch this to handle SQL-related errors.
 - `SQLIntegrityConstraintViolationException`: Occurs when you try to insert duplicate keys.
 - `SQLSyntaxErrorException`: Syntax error in the SQL query.
 
-## 9. Summary
+## 10. Summary
 Here is a summary of the whole flow
 
-- **`Load the JDBC Driver:`** There are two methods available to load the JDBC driver.
+- **`Load the JDBC Driver:`** There are two methods to load the JDBC driver.
     - `Class.forName(<name_of_the_driver>)`
     - `DriverManager.registerDriver(new <name_of_the_driver>)`
 
-- **`Create a Query:`** Query can be created using one of the following:
-    - `Statement`
-    - `PreparedStatement`
-    - `CallableStatement`
+- **`Create Connection:`** 
+    - Use `DriverManager.getConnection(<url>, <user>, <password>)` to establish a connection. This returns a `Connection` object.
+
+- **`Create a Query:`** Queries can be created using one of the following methods from the `Connection` object:
+    - `createStatement()` - Returns Statement object
+    - `prepareStatement(String query)` - Returns a `PreparedStatement` object.
+    - `prepareCall(String query)`- Returns a CallableStatement object 
+
+For `PreparedStatement`, set the values for parameters using the appropriate setter methods (e.g., `setInt()`, `setString()`).
 
 - **`Execute the Query:`** Depending on the type of query:
     - Use `executeQuery()` for `SELECT` queries, which returns a `ResultSet`.
     - Use `executeUpdate()` for `INSERT`, `UPDATE`, or `DELETE` queries, which returns an `integer` representing the number of affected rows.
+    - **For `Statement` objects:** Pass the query string as an argument to `executeQuery()` or `executeUpdate()`
+    - **For `PreparedStatement` objects:** No need to pass the query string again since it's already provided when creating the `PreparedStatement`.
 
 - **`Process the Result:`** 
     - If the query is a `SELECT` query, process the `ResultSet`.

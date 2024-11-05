@@ -2,8 +2,7 @@
 
 ## 1. Connecting to MySQL
 
-| Function
- | Description | Example | Result |
+| Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `mysql.connector.connect()` | Establishes a connection to the MySQL database. | `conn = mysql.connector.connect(host='localhost', user='root', password='password', database='test_db')` | Connects to MySQL database. |
 | `conn.close()` | Closes the database connection. | `conn.close()` | Connection is closed. |

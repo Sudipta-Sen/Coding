@@ -50,8 +50,8 @@ print(dp)
 | `lst.clear()`        | Removes all items from the list                     |
 | `lst.index(item)`    | Returns the index of the first occurrence of the item |
 | `lst.count(item)`    | Returns the number of occurrences of the item       |
-| `lst.sort()`         | Sorts the list in place                             |
-| `lst.reverse()`      | Reverses the list in place                          |
+| `lst.sort(reverse, key)`         | Take two optional keyword arguments -  <ul><li>`reverse` - By default `False`. If `True` is passed, the list is sorted in `descending` order.</li><li>`key` - Comparion is based on this function</li>                           |
+| `lst.reverse()`      | Reverses the list in place                      |
 
 ## 2. Stack (Using list or collections.deque)
 
@@ -372,6 +372,13 @@ sorted_words = sorted(words, key=len)
 
 print(sorted_words)  # Output: ['kiwi', 'apple', 'grape', 'banana', 'blueberry']
 ```
+
+### Partial sort of an array
+```Python
+nums = [3,16,8,4,2]
+nums[0:3] = sorted(nums[0:3])
+print(nums) # Output: [3, 8, 16, 4, 2]
+``` 
 
 ### Custom Comparator Using functools.cmp_to_key
 

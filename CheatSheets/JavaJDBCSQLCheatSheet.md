@@ -51,6 +51,8 @@ Example:
 DriverManager.registerDriver(new com.mysql.jdbc.Driver())
 ```
 
+However, in JDBC 4.0 and later, the driver is loaded automatically as long as the JDBC driver (e.g., `mysql-connector-java.jar`) is in the classpath. When `DriverManager.getConnection()` is called, it automatically searches for the appropriate driver from the drivers available on the classpath.
+
 ## 4. Database Connection Setup
 
 ### a. Connection URL Format:

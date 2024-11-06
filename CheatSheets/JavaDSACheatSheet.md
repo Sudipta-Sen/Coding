@@ -21,8 +21,8 @@
 | `shuffle(List<T> list)` |	Shuffles the elements randomly |	`Collections.shuffle(list)` |	Random order |
 | `binarySearch(List<T> list, T key)` |	Searches for key in a sorted list |	`Collections.binarySearch(list, 2)` |	Index of key |
 | `min(Collection<T> c)` | Returns the smallest element |`Collections.min(list)`	| Smallest element |
-| `max(Collection<T> c)` |	Returns the largest element |	Collections.max(list)	| Largest element |
-| `frequency(Collection<T> c, Object o)` |	Returns the frequency of o |	Collections.frequency(list, 1) |	Count of 1 |
+| `max(Collection<T> c)` |	Returns the largest element |	`Collections.max(list)`	| Largest element |
+| `frequency(Collection<T> c, Object o)` |	Returns the frequency of o |	`Collections.frequency(list, 1)` |	Count of 1 |
 
 binarySearch returns -- 
 - rightmost index of the element if found
@@ -59,7 +59,7 @@ System.out.println(index);  // Output: 1
 | `Arrays.fill(array, value)`	| Fills the array with the specified value. |
 | `Arrays.equals(array1, array2)` |	Checks if two arrays are equal. |
 | `Arrays.deepToString(array)` |	Converts a multi-dimensional array to a string. |
-| `Arrays.asList(array)` |	Converts the array into a List |
+| `Arrays.asList(array)` |	Converts the array into a List, It does not work as expected with primitive arrays |
 
 ## 5. Custom Sort
 We can write our custom sort function to sort Array or List

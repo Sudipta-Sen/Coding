@@ -1,6 +1,17 @@
 # MySQL Connector Python Cheatsheet
 
-## 1. Connecting to MySQL
+## 1. Package required
+- mysql-connector-python
+
+```shell
+pip install mysql-connector-python
+```
+
+```Python
+import mysql.connector
+```
+
+## 2. Connecting to MySQL
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
@@ -36,13 +47,13 @@ connection.close()
 
 ```
 
-## 2. Creating a Cursor
+## 3. Creating a Cursor
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `conn.cursor()` | Creates a cursor object for executing queries. | `cursor = conn.cursor()` | Cursor is created for executing queries. |
 
-## 3. Executing Queries
+## 4. Executing Queries
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
@@ -59,7 +70,7 @@ cursor.executemany(sqlFormula, students)
 cursor.commit()
 ```
 
-## 4. Fetching Data
+## 5. Fetching Data
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
@@ -67,27 +78,27 @@ cursor.commit()
 | `cursor.fetchall()` | Fetches all remaining rows from the result set. | `rows = cursor.fetchall()` | Fetches all rows from the result. |
 | `cursor.fetchmany(size)` | Fetches the next `size` rows from the result set. | `rows = cursor.fetchmany(3)` | Fetches 3 rows. |
 
-## 5. Inserting and Updating Data
+## 6. Inserting and Updating Data
 
 | Function  | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `cursor.execute(query, params)` | Executes an SQL INSERT or UPDATE query with parameters. | `cursor.execute("INSERT INTO users (name, age) VALUES (%s, %s)", ('John', 30))` | Inserts data into the `users` table. |
 | `conn.commit()` | Commits the current transaction. | `conn.commit()` | Data changes are committed to the database. No changes will be committed in the database until we run this|
 
-## 6. Transactions
+## 7. Transactions
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `conn.commit()` | Commits the current transaction. | `conn.commit()` | Saves changes to the database. |
 | `conn.rollback()` | Rolls back the current transaction. | `conn.rollback()` | Rolls back changes to the previous commit. |
 
-## 7. Prepared Statements
+## 8. Prepared Statements
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `cursor.execute(query, params)` | Executes a query with parameterized values. | <li>`cursor.execute("SELECT * FROM users WHERE id = %s", (1,))`</li> <li>`cursor.execute("SELECT * FROM users WHERE id = %s AND name = %s AND age = %s", (1, 'John', 25))`</li>| Executes a query with a bound parameter. It prevents from SQL Injection|
 
-## 8. Error Handling
+## 9. Error Handling
 
 | Exception | Description | Example |
 |-----------|-------------|---------|
@@ -95,14 +106,14 @@ cursor.commit()
 | `mysql.connector.InterfaceError` | Raised for connection-related issues. | `except mysql.connector.InterfaceError:` |
 | `mysql.connector.ProgrammingError` | Raised for SQL syntax errors. | `except mysql.connector.ProgrammingError:` |
 
-## 9. Closing Connections and Cursors
+## 10. Closing Connections and Cursors
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `cursor.close()` | Closes the cursor. | `cursor.close()` | Cursor is closed. |
 | `conn.close()` | Closes the connection. | `conn.close()` | Connection is closed. |
 
-## 10. Checking MySQL Connection Status
+## 11. Checking MySQL Connection Status
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|

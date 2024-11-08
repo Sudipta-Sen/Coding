@@ -44,7 +44,11 @@ cursor.execute("DROP DATABASE my_new_db")
 
 # Close connection
 connection.close()
+```
+- mysql.connector.connect returns a object of type `MySQLConnection`
 
+```Python
+from mysql.connector import MySQLConnection
 ```
 
 ## 3. Creating a Cursor
@@ -83,7 +87,7 @@ cursor.commit()
 | Function  | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `cursor.execute(query, params)` | Executes an SQL INSERT or UPDATE query with parameters. | `cursor.execute("INSERT INTO users (name, age) VALUES (%s, %s)", ('John', 30))` | Inserts data into the `users` table. |
-| `conn.commit()` | Commits the current transaction. | `conn.commit()` | Data changes are committed to the database. No changes will be committed in the database until we run this|
+| `conn.commit()` | Commits the current transaction. | `conn.commit()` | Data changes are committed to the database. |
 
 ## 7. Transactions
 
@@ -92,11 +96,18 @@ cursor.commit()
 | `conn.commit()` | Commits the current transaction. | `conn.commit()` | Saves changes to the database. |
 | `conn.rollback()` | Rolls back the current transaction. | `conn.rollback()` | Rolls back changes to the previous commit. |
 
+Explanation:
+- DDL Operations: No `commit()` needed (e.g., `CREATE DATABASE`, `CREATE TABLE`).
+- DML Operations: Always use `connection.commit()` to make sure your changes (insert/update/delete) are saved in the database.
+- Transaction Rollback: If an error occurs during a DML operation, you can call `connection.rollback()` to undo any changes made during that transaction.
+
 ## 8. Prepared Statements
 
 | Function | Description | Example | Result |
 |-------------------|-------------|---------|--------|
 | `cursor.execute(query, params)` | Executes a query with parameterized values. | <li>`cursor.execute("SELECT * FROM users WHERE id = %s", (1,))`</li> <li>`cursor.execute("SELECT * FROM users WHERE id = %s AND name = %s AND age = %s", (1, 'John', 25))`</li>| Executes a query with a bound parameter. It prevents from SQL Injection|
+
+- Parameterized queries with placeholders (`%s`) are typically used for values in `INSERT`, `UPDATE`,`DELETE`, or `SELECT` statements but not for database or table names like `CREATE DATABASE`
 
 ## 9. Error Handling
 

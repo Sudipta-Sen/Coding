@@ -16,6 +16,7 @@
 > 13. [Rounding Functions](#13-rounding-functions)
 > 14. [Binary Search](#14-binary-search)
 > 15. [Customize sort function](#15-customize-sort-function)
+> 16. [String Basics](#16-string-basics)
 
 ##  1. List (Similar to ArrayList in Java)
 
@@ -412,4 +413,78 @@ sorted_people = sorted(people, key=lambda x: x['age'])
 
 print(sorted_people)
 # Output: [{'name': 'Alice', 'age': 30}, {'name': 'Bob', 'age': 35}, {'name': 'John', 'age': 45}]
+```
+
+## 16. String basics
+
+## Accessing Characters
+```Python
+s = "Hello, World!"
+
+# Slicing
+s[0:5]    # 'Hello'
+s[:5]     # 'Hello' (same as above)
+s[7:]     # 'World!'
+s[-6:]    # 'World!'
+
+# Length of the string
+len(s)    # 13
+```
+
+## Common String Methods
+```Python
+# Upper and lower case
+s.upper()                # 'HELLO, WORLD!'
+s.lower()                # 'hello, world!'
+s.capitalize()           # 'Hello, world!'
+
+# String splitting and joining
+s.split()                # ['Hello,', 'World!']
+s.split(',')             # ['Hello', ' World!']
+'-'.join(['Hello', 'World'])  # 'Hello-World'
+
+# Remove whitespace
+s.strip()                # Removes leading/trailing whitespace
+s.lstrip()               # Removes leading whitespace
+s.rstrip()               # Removes trailing whitespace
+
+# Replace part of a string
+s.replace('World', 'Everyone')  # 'Hello, Everyone!'
+
+# Find substring
+s.find('World')          # 7  (Returns index of substring, -1 if not found)
+s.rfind('o')             # 8  (Last occurrence of 'o')
+
+# Check string starts/ends
+s.startswith('Hello')    # True
+s.endswith('!')          # True
+```
+
+### ord() and chr() Functions
+- `ord(char):` Returns the Unicode code point (integer) for a given character.
+- `chr(int):` Converts an integer (Unicode code point) to its corresponding character.
+
+```Python
+# ord() examples
+ord('a')  # 97
+ord('A')  # 65
+ord('!')  # 33
+
+# chr() examples
+chr(97)   # 'a'
+chr(65)   # 'A'
+chr(33)   # '!'
+```
+
+### Check for Content
+```Python
+# Check if string contains substring
+'World' in s              # True
+'Python' in s             # False
+
+# Check if string is alphanumeric, digits, or alphabetic
+s.isalnum()               # False (space and punctuation aren't alphanumeric)
+'Hello123'.isalnum()      # True
+'123'.isdigit()           # True
+'abc'.isalpha()           # True
 ```

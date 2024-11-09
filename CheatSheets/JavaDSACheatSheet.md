@@ -45,7 +45,15 @@ System.out.println(index);  // Output: 1
 | `indexOf(String str)`	| Returns the index of the first occurrence |	"abcabc".indexOf("b")	| `1` |
 | `split(String regex)` |	Splits the string into an array. |	"a,b,c".split(",") |	`["a", "b", "c"]` |
 | `replace(char oldChar, char newChar)`	| Replaces all occurrences of oldChar. |	"abc".replace('a', 'x') |	`xbc` |
+| `toCharArray()` | converts `string` into `char[]`, which is iterable using `for-each` loop | Example below | |
 
+```Java
+String s = "hello";
+
+for (char ch : s.toCharArray()) {
+    System.out.println(ch);  // output: 'h', 'e', 'l', 'l', 'o'
+}
+```
 ## 4. Arrays
 
 ### Methods from java.util.Arrays Class

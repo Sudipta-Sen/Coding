@@ -92,7 +92,16 @@ from queue import Queue
 queue = Queue()  # Empty queue
 queue.put(item)  # Enqueue
 queue.get()  # Dequeue
+length = queue.qsize() # length of queue, buildin len() func does not work with queue 
 ```
+
+### Workaround for Peeking in queue.Queue
+
+`queue` module does not have a built-in `peek` feature. We have few options to get the `peek` functionality.
+
+- Use a custom wrapper around the `queue.Queue` class that keeps track of the front element.
+- Use a `deque` from the `collections` module (as `queue`), which does allow direct access to elements.
+
 
 ##  4. HashMap (Using dict, Similar to Java HashMap)
 ### Definition: 
@@ -213,6 +222,25 @@ dq.popleft()  # Remove from the left
 | `dq.pop()`  |	Removes and returns the rightmost item  |
 | `dq.popleft()`  |	Removes and returns the leftmost item   |
 | `dq.clear()`  |	Removes all items from the deque   |
+| `len(dq)`| length of dequeue, build in len() func works with queue |
+
+### How to "Peek" in a deque
+
+- Peek at the front: access the first element without removing it using deque[0].
+
+- Peek at the back: access the last element without removing it using deque[-1]
+
+```Python
+from collections import deque
+
+queue = deque([10, 20, 30, 40])
+
+front_peek = queue[0]
+print(f"Peek at front: {front_peek}")  # Output: 10
+
+back_peek = queue[-1]
+print(f"Peek at back: {back_peek}")    # Output: 40
+```
 
 ## 9. OrderedDict (Using collections.OrderedDict)
 

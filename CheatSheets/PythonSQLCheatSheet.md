@@ -108,6 +108,7 @@ Explanation:
 | `cursor.execute(query, params)` | Executes a query with parameterized values. | <li>`cursor.execute("SELECT * FROM users WHERE id = %s", (1,))`</li> <li>`cursor.execute("SELECT * FROM users WHERE id = %s AND name = %s AND age = %s", (1, 'John', 25))`</li>| Executes a query with a bound parameter. It prevents from SQL Injection|
 
 - Parameterized queries with placeholders (`%s`) are typically used for values in `INSERT`, `UPDATE`,`DELETE`, or `SELECT` statements but not for database or table names like `CREATE DATABASE`
+- Placeholder for a table name is not allowed (in `FROM` clause). Placeholders can only be used for values (e.g., conditions in a `WHERE` clause). 
 
 ## 9. Error Handling
 

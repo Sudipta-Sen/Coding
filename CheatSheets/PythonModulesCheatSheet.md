@@ -1,23 +1,37 @@
-# CheatSheet for various python modules
+# CheatSheet for various python modules & important concepts
 
 ## Table of Contents
 > 1. [Requests Module](#1-requests-module)
->> 1. [Get Request](#1-get-request)
->> 2. [Post Request](#2-post-request)
->> 3. [Send JSON data](#3-sending-json-data-in-post-request)
->> 4. [PUT Request](#4-put-request)
->> 5. [Delete Request](#5-delete-request)
->> 6. [HEAD Request](#6-head-request)
->> 7. [Send parameters in GET](#7-sending-parameters-in-get-request)
->> 8. [Send headers](#8-sending-headers-with-request)
->> 9. [Cookies](#9-working-with-cookies)
->> 10. [Upload files](#10-uploading-files)
->> 11. [Authentication](#11-authentication)
->> 12. [Download](#12-downloading-content)
->> 13. [Proxies](#13-proxies)
->> 14. [SSL Verification](#14-disable-ssl-verification)
->> 15. [Custome timeout](#15-custom-timeout-for-requests)
->> 16. [Status Code](#16-common-status-codes)
+>> a. [Get Request](#1-get-request)<br>
+>> b. [Post Request](#2-post-request)<br>
+>> c. [Send JSON data](#3-sending-json-data-in-post-request)<br>
+>> d. [PUT Request](#4-put-request)<br>
+>> e. [Delete Request](#5-delete-request)<br>
+>> f. [HEAD Request](#6-head-request)<br>
+>> g. [Send parameters in GET](#7-sending-parameters-in-get-request)<br>
+>> h. [Send headers](#8-sending-headers-with-request)<br>
+>> i. [Cookies](#9-working-with-cookies)<br>
+>> j. [Upload files](#10-uploading-files)<br>
+>> k. [Authentication](#11-authentication)<br>
+>> l. [Download](#12-downloading-content)<br>
+>> m. [Proxies](#13-proxies)<br>
+>> n. [SSL Verification](#14-disable-ssl-verification)<br>
+>> o. [Custome timeout](#15-custom-timeout-for-requests)<br>
+>> p. [Status Code](#16-common-status-codes)<br>
+> 2. [Lambda/Anonymous Function](#2-lambdaanonymous-function)
+>> a. [Basic Syntax](#basic-syntax)<br>
+>> b. [lambdas with default arguments](#lambdas-with-default-arguments)<br>
+>> c. [condition in lambda](#conditional-ternary-in-lambda)
+> 3. [Map function](#3-map-function)<br>
+>> a. [Map with Lambda](#map-with-lambda-function)<br>
+>> b. [Map without Lambda](#map-without-lambda-function)<br>
+>> c. [Map with multiple iterables](#map-with-multiple-iterables)
+> 4. [Filter function](#4-filter-function)
+>> a. [Filter without lambda](#filter-without-lambda)<br>
+>> b. [Filter with lambda](#filter-with-lambda)
+> 5. [Reduce function](#5-reduce-function)
+>> a. [Reduce without lambda](#reduce-without-lambda)<br>
+>> b. [Reduce with lambda](#reduce-without-lambda)
 
 ## 1. Requests module
 
@@ -159,3 +173,125 @@ response = requests.get('https://example.com', timeout=(3.05, 27))
 - 403: Forbidden
 - 404: Not Found
 - 500: Internal Server Error
+
+## 2. Lambda/Anonymous Function 
+
+Lambda functions are small anonymous functions defined with the `lambda` keyword.
+
+### Basic Syntax
+```Python
+lambda arguments: expression
+```
+- `arguments:` Input parameters (like in a normal function).
+- `expression:` A single expression that is evaluated and returned
+
+Example:
+```Python
+add = lambda x, y: x + y
+print(add(2, 3))  # Output: 5
+```
+
+### Lambdas with Default Arguments
+```Python
+add = lambda x, y=10: x + y
+print(add(5))  # Output: 15
+print(add(5, 3))  # Output: 8
+```
+
+### Conditional (Ternary) in Lambda
+```Python
+max_value = lambda x, y: x if x > y else y
+print(max_value(5, 10))  # Output: 10
+```
+
+## 3. Map function
+The `map()` function executes the given function to every item of an iterable, such as a `list` or `tuple`, and returns a map object (which is an iterator).
+
+Syntax
+```Python
+map(function, iterables)
+```
+- `function:`	The function to execute for each item
+- `iterable:` A sequence, collection or an iterator object.
+- Returns an iterable object
+
+### Map without lambda function
+```Python
+a = [1, 2, 3, 4]
+
+def double(val):
+  return val*2
+
+res = list(map(double, a))
+print(res) # Output: [1, 4, 9, 16]
+```
+### Map with lambda function
+```Python
+a = [1, 2, 3, 4]
+
+res = list(map(lambda n:n*n, a))
+print(res) # Output: [1, 4, 9, 16]
+```
+
+### map() with multiple iterables
+```Python
+a = [1, 2, 3]
+b = [8, 9, 10]
+
+res = list(map(lambda x,y:x+y, a, b))
+print(res) #Output: [9, 11, 13]
+```
+## 4. Filter Function
+
+The `filter()` function returns an iterator where the items are filtered through a function to test if the item is accepted in result or not.
+
+Syntax is same as `map()`
+
+### Filter without lambda
+```Python
+def isEven(x):
+    if x%2 == 0: return True
+    return False
+
+a = [1,2,3,4,5,6]
+res = list(filter(isEven, a))
+print(res) # Output: [2, 4, 6]
+```
+
+### Filter with lambda
+```Python
+a = [1,2,3,4,5,6]
+res = list(filter(lambda x:x%2==0, a))
+print(res) # Output: [2, 4, 6]
+```
+
+## 5. Reduce function
+The reduce() function accepts a function and a sequence and returns a single value calculated as follows:
+
+- Initially, the function is called with the first two items from the sequence and the result is returned.
+- The function is then called again with the result obtained in step 1 and the next value in the sequence. This process keeps repeating until there are items in the sequence.
+
+This function is defined in `functools` module.
+
+- Syntax: `reduce(function, sequence[, initial]) -> value`
+
+### reduce without lambda
+```Python
+from functools import reduce
+
+def sum(a, b):
+    return a+b
+    
+arr = [3, 4, 5]
+val = reduce(sum, arr)
+print(val) # Output: 12
+```
+
+### reduce with lambda
+```Python
+from functools import reduce
+    
+arr = [3, 4, 5]
+val = reduce(lambda x,y:x+y, arr)
+print(val) # Output: 12
+```

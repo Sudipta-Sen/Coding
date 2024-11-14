@@ -6,7 +6,7 @@
 > 3. [Queue (Using collections.deque or queue.Queue)](#3-queue-using-collectionsdeque-or-queuequeue)
 > 4. [HashMap (Using dict, Similar to Java HashMap)](#4-hashmap-using-dict-similar-to-java-hashmap)
 > 5. [Set (Similar to Java HashSet)](#5-set-similar-to-java-hashset)
-> 6. [Priority Queue (Min-Heap, Using heapq)](#6-priority-queue-min-heap-using-heapq)
+> 6. [Priority Queue (Using heapq)](#6-priority-queue-using-heapq)
 > 7. [Linked List (Using Custom Class)](#7-linked-list-using-custom-class)
 > 8. [Deque (Double-ended Queue using collections.deque)](#8-deque-double-ended-queue-using-collectionsdeque)
 > 9. [OrderedDict (Using collections.OrderedDict)](#9-ordereddict-using-collectionsordereddict)
@@ -144,9 +144,9 @@ hash_set = set()  # Empty set
 | `hash_set.difference(other_set)`    | 	Returns a new set with elements in this set but not in the other    |
 | `hash_set.clear()`  |	Removes all items from the set |
 
-##  6. Priority Queue (Min-Heap, Using heapq)
+##  6. Priority Queue (Using heapq)
 
-### Definition: 
+### Min heap: 
 A binary heap (min-heap by default).
 
 ```python
@@ -156,6 +156,70 @@ heap = []
 heapq.heappush(heap, item)  # Push
 heapq.heappop(heap)  # Pop (smallest element)
 ```
+
+### Max heap:
+There are two ways to implement max heap in python
+- Custom Wrapper Class
+- Implemented by negating values
+
+#### Custom Wrapper Class
+Define custom wrapper class to handle comparisons and create a max-heap by overriding the comparison methods.
+
+```Python
+import heapq
+
+class MaxHeapObj:
+    def __init__(self, val):
+        self.val = val
+
+    # Define comparison operators to create a max-heap
+    def __lt__(self, other):
+        return self.val > other.val  # Reverse the comparison for max-heap
+
+    def __eq__(self, other):
+        return self.val == other.val
+
+    def __str__(self):
+        return str(self.val)
+
+# Example of max-heap without negation
+max_heap = []
+heapq.heappush(max_heap, MaxHeapObj(10))
+heapq.heappush(max_heap, MaxHeapObj(20))
+heapq.heappush(max_heap, MaxHeapObj(5))
+
+# Extracting the maximum element
+print(heapq.heappop(max_heap))  # Output: 20
+print(heapq.heappop(max_heap))  # Output: 10
+print(heapq.heappop(max_heap))  # Output: 5
+
+```
+
+#### Implemented by negating values
+```Python
+import heapq
+
+# Initialize an empty max-heap by negating values
+max_heap = []
+
+# Add elements (negate the value)
+heapq.heappush(max_heap, -10)
+heapq.heappush(max_heap, -5)
+heapq.heappush(max_heap, -20)
+
+# Pop the largest element (negate to get original value)
+max_element = -heapq.heappop(max_heap)  # Returns 20
+
+# Peek at the largest element without popping
+max_element = -max_heap[0]
+
+# Convert a list to a max-heap
+heap = [10, 5, 20]
+heapq.heapify([-x for x in heap])  # Store as negatives for max-heap
+
+```
+
+
 ### Common Methods:
 | Method              | Description                                         |
 |---------------------|-----------------------------------------------------|

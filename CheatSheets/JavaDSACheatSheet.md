@@ -8,6 +8,7 @@
 > 5. [Custom Sort](#5-custom-sort)
 > 6. [lower_bound using binarySearch](#6-lower_bound-using-binarysearch)
 > 7. [String builder](#7-string-builder)
+> 8. [Priority Queue](#8-priority-queue)
 
 ## 1. Java Collection Framework Overview
 ![plot](JavaCollection.svg)
@@ -216,3 +217,59 @@ StringBuilder sb = new StringBuilder("Hello World");
 sb.setCharAt(6, 'J');
 System.out.println(sb);  // Output: Hello Jorld
 ```
+
+## 8. Priority Queue
+
+### a. Min heap
+we use the `PriorityQueue` class from `java.util` for priority queues. By `default`, it behaves as a `min-heap`. For a max-heap, we can pass a custom comparator.
+
+```java
+import java.util.PriorityQueue;
+
+PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+
+// Add elements
+minHeap.offer(10);
+minHeap.offer(5);
+minHeap.offer(20);
+
+// Peek the smallest element
+System.out.println(minHeap.peek()); // Output: 5
+
+// Pop the smallest element
+System.out.println(minHeap.poll()); // Output: 5
+```
+
+### b. Max heap
+
+```Java
+import java.util.Collections;
+import java.util.PriorityQueue;
+
+public class MaxHeapExample {
+    public static void main(String[] args) {
+        // Initialize a max-heap using Collections.reverseOrder()
+        PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Collections.reverseOrder());
+
+        // Add elements
+        maxHeap.offer(10);
+        maxHeap.offer(5);
+        maxHeap.offer(20);
+
+        // Peek the largest element
+        System.out.println(maxHeap.peek()); // Output: 20
+
+        // Pop the largest element
+        System.out.println(maxHeap.poll()); // Output: 20
+    }
+}
+```
+
+### Key Functions in Java
+| Function | Description |
+| -------- | ----------- |
+| `offer(element)` | Adds an element to the priority queue. |
+| `poll()` | Removes and returns the top element (smallest or largest). |
+| `peek()` | Retrieves, but does not remove, the top element. |
+| `size()` |	Returns the number of elements in the queue. |
+| `isEmpty()` |	Returns true if the queue is empty. |

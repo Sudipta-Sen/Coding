@@ -265,7 +265,7 @@ public class MaxHeapExample {
 }
 ```
 
-### Key Functions in Java
+### Key Functions
 | Function | Description |
 | -------- | ----------- |
 | `offer(element)` | Adds an element to the priority queue. |
@@ -273,3 +273,125 @@ public class MaxHeapExample {
 | `peek()` | Retrieves, but does not remove, the top element. |
 | `size()` |	Returns the number of elements in the queue. |
 | `isEmpty()` |	Returns true if the queue is empty. |
+
+### c. Custom Comparator
+####  Custom Comparator Using a Lambda Expression
+```Java
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class Main {
+    public static void main(String[] args) {
+        // Custom comparator for descending order
+        PriorityQueue<Integer> pq = new PriorityQueue<>((a, b) -> b - a);
+
+        // Adding elements
+        pq.add(10);
+        pq.add(20);
+        pq.add(15);
+
+        while (!pq.isEmpty()) {
+            System.out.println(pq.poll());  // Output: 20, 15, 10
+        }
+    }
+}
+```
+
+#### Using a Static Method in the Same Class
+```Java
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class Main {
+    
+    // Static method acting as a comparator
+    public static int customComparator(Integer a, Integer b) {
+        return b - a;  // Descending order
+    }
+
+    public static void main(String[] args) {
+        // Using the static method as a custom comparator
+        PriorityQueue<Integer> pq = new PriorityQueue<>(Main::customComparator);
+
+        pq.add(10);
+        pq.add(20);
+        pq.add(15);
+
+        // Polling elements from the priority queue
+        while (!pq.isEmpty()) {
+            System.out.println(pq.poll());  // Output: 20, 15, 10
+        }
+    }
+}
+```
+####  Using an Anonymous Class
+```Java
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+public class Main {
+    public static void main(String[] args) {
+        // Custom comparator for descending order
+        PriorityQueue<Integer> pq = new PriorityQueue<>(new Comparator<Integer>() {
+            @Override
+            public int compare(Integer a, Integer b) {
+                return b - a; // Reverse order
+            }
+        });
+
+        // Adding elements
+        pq.add(10);
+        pq.add(20);
+        pq.add(15);
+
+        // Polling elements from priority queue
+        while (!pq.isEmpty()) {
+            System.out.println(pq.poll());  // Output: 20, 15, 10
+        }
+    }
+}
+```
+
+####  Custom Comparator for Complex Objects
+```Java
+import java.util.PriorityQueue;
+import java.util.Comparator;
+
+class Person {
+    String name;
+    int age;
+
+    Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (" + age + ")";
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        // Custom comparator to sort people by age in ascending order
+        PriorityQueue<Person> pq = new PriorityQueue<>(new Comparator<Person>() {
+            @Override
+            public int compare(Person p1, Person p2) {
+                return p1.age - p2.age;
+            }
+        });
+
+        // Adding Person objects to the PriorityQueue
+        pq.add(new Person("Alice", 30));
+        pq.add(new Person("Bob", 25));
+        pq.add(new Person("Charlie", 35));
+
+        // Polling elements from priority queue
+        while (!pq.isEmpty()) {
+            System.out.println(pq.poll());
+        }
+        // Output: Bob (25), Alice (30), Charlie (35)
+    }
+}
+```

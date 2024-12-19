@@ -295,3 +295,45 @@ arr = [3, 4, 5]
 val = reduce(lambda x,y:x+y, arr)
 print(val) # Output: 12
 ```
+
+## Multithreading (threading module)
+
+### Key Concepts:
+
+- A thread is an operating system object that executes a set of instructions. By default, each Python program runs on a single thread known as the main thread, created by the Python interpreter (PVM).
+
+- Multithreading allows multiple threads to run concurrently, though Python threads run in the same memory space, the memmory requirement increases when number of thread increases.
+
+### Main Thread Functions:
+
+- `threading.current_thread():` Returns the current thread object.
+- `threading.current_thread().name:` Returns the name of the current thread.
+- `threading.current_thread().ident:` Returns the thread ID (TID).
+- `threading.current_thread().is_alive():` Returns True if the thread is active.
+
+### Creating Threads: 
+
+There are two primary ways to create a thread in Python:
+
+1. Using the `Thread` class directly.
+2. Extending the `Thread` class.
+
+### Use `Thread` class directly
+
+#### Creating Threads Using Thread Class
+
+You can create and start threads using the `Thread` class from the `threading` module.
+
+Refer to the example - [thread1.py](Snippets/thread1.py)
+
+- Explanation:
+    - Calling the `Thread` constructor signals the operating system to create a new thread and allocate memory for it. However, the thread's execution does not begin immediately. The new thread is only initialized, not running. The actual execution of the thread starts only when the `start()` method is called, which triggers the operating system to schedule the thread for execution.
+
+    - We pass arguments using both `args` (tuple) and `kwargs` (dictionary) for different ways to input parameters.
+
+#### Using the Thread Class in an Object-Oriented Way
+
+Refer to the example - [thread2.py](Snippets/thread2.py)
+
+- Explanation:
+    - We use both instance methods and class/static methods as thread targets.

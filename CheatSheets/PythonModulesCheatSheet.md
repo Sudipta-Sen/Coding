@@ -32,6 +32,14 @@
 > 5. [Reduce function](#5-reduce-function)
 >> a. [Reduce without lambda](#reduce-without-lambda)<br>
 >> b. [Reduce with lambda](#reduce-without-lambda)
+> 6. [Multi-threading](#6-multithreading-threading-module)<br>
+>> [a. Key Concepts](#key-concepts)<br>
+>> [b. Thread Methods](#main-thread-functions)<br>
+>> [c. Creating Thread](#creating-threads)<br>
+>>> [i. Use thread class directly](#use-thread-class-directly)<br>
+>>> [ii. Extending thread class](#creating-threads-by-extending-the-thread-class)
+
+>> [d. Thread naming and identification](#thread-naming-and-identification)<br>
 
 ## 1. Requests module
 
@@ -296,7 +304,7 @@ val = reduce(lambda x,y:x+y, arr)
 print(val) # Output: 12
 ```
 
-## Multithreading (threading module)
+## 6. Multithreading (threading module)
 
 ### Key Concepts:
 
@@ -337,3 +345,107 @@ Refer to the example - [thread2.py](Snippets/thread2.py)
 
 - Explanation:
     - We use both instance methods and class/static methods as thread targets.
+
+### Creating Threads by Extending the `Thread` Class
+When we call `start()` on a thread object, the interpreter internally calls the `run()` method. This run() method is part of the `Thread` class, which belongs to the `threading` module. The main job of the `run()` method is to execute the target function in a separate thread (in a different memory space). This is the default behavior when we create and start a thread.
+
+However, we can customize this behavior by overriding the `run()` method. To do this, we extend the `Thread` class in our own class and redefine the `run()` method. This allows us to define the specific actions our thread should perform.
+
+Key Benefits of Overriding run():
+1. **Custom Logic:** We can define what the thread will execute by customizing the run() method.
+1. **Access to Thread Data:** Instead of returning values from a thread (which is not directly possible), we can store the results in instance variables. After the thread has finished executing, these instance variables can be accessed to retrieve the result.
+
+    ```Python
+    from threading import Thread, current_thread
+    import time
+
+    class MyClass(Thread):
+        def run(self):
+            a = 10
+            b = 20
+            time.sleep(0.1) # Simulate some working
+            self.res = a+b
+            
+    t1 = MyClass()
+    t1.start()
+    time.sleep(2) # let the child thread finish
+    print(f"Res={t1.res}") #Output: Res=30
+    ```
+
+Refer to the example - [thread3.py](Snippets/thread3.py)
+
+Explanation:
+1. Passing Arguments to a Thread:
+
+    The `run()` method in Python's `Thread` class does not accept arguments directly. To pass arguments to a thread, you can either:
+
+    - Use the `__init__` method of your child class to pass arguments when creating the thread instance.
+
+    - Alternatively, use a lambda function or a wrapper function to handle the arguments before starting the thread.
+
+2. Calling the Superclass Constructor:
+
+    In the constructor (`__init__`) of your child class, it's essential to call the constructor of the parent class (`Thread`). This is done using `super().__init__()`. The `Thread` class constructor performs crucial setup steps that are necessary before the thread can be started and executed properly. Skipping this could lead to incorrect or incomplete thread initialization.
+
+### Thread Naming and Identification
+1. Unique Thread Name Assignment:
+
+    - Each thread is assigned a unique name when created. This name follows the naming convention `Thread-[%d]`, where `%d` represents an incrementing integer.
+
+    Example:
+    - First thread: `Thread-1`
+    - Second thread: `Thread-2`
+2. Main Thread Name:
+
+    - The main thread (created by Python when the program starts) is named `MainThread`.
+
+3. Thread Object and Name Attribute:
+
+    - Every thread in Python is an object of the `Thread` class. The name of a thread is stored in the `name` attribute of the thread object.
+
+4. Changing Thread Names:
+
+    - You can change the name of a thread by directly assigning a string to the `name` attribute of the thread object.
+    - This applies to both the main thread and any created threads.
+    - Alternatively, you can use the `setName()` and `getName()` methods to set or retrieve the thread’s name, but note that these methods are deprecated and may be removed in future Python versions.
+
+5. Thread Identifiers:
+
+    - Thread Identifier:
+
+        - Each thread is assigned a unique, positive integer (within the Python process) called the thread identifier, which is stored in the `ident` attribute. This value is read-only and assigned by the Python interpreter.
+
+    - Native Identifier:
+
+        - The native identifier is assigned by the operating system and stored in the `native_id` attribute. It becomes available only after the thread is started. In many cases, the thread identifier (`ident`) and the native identifier (`native_id`) are the same.
+
+    ```Python
+    from threading import Thread, current_thread
+    import time
+
+    def display():
+        time.sleep(0.1)
+
+    def show():
+        time.sleep(0.1)
+
+    t1 = Thread(target=display)
+    t2 = Thread(target=show)
+    print(t1.name) #Outut: Thread-1 (display)
+    print(t2.name) #Outut: Thread-2 (show)
+
+    # change name of the t1 thread
+    t1.name = "sudipta"
+    print(t1.name) #Outut: sudipta
+
+    # change name of the main thread
+    current_thread().name = "newmain"
+    print(current_thread().name) #Outut: newmain
+
+    # Get indentifiers, initially this will print null as thread is not yet started
+    print(t1.ident)
+    print(t1.native_id)
+    t1.start()
+    print(t1.ident)
+    print(t1.native_id)
+    ```

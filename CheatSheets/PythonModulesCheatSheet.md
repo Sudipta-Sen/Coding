@@ -40,6 +40,8 @@
 >>> [ii. Extending thread class](#creating-threads-by-extending-the-thread-class)
 
 >> [d. Thread naming and identification](#thread-naming-and-identification)<br>
+>> [e. Some important builin functions](#some-important-builin-functions)<br>
+>>[f. Join method](#join-method)<br>
 
 ## 1. Requests module
 
@@ -449,3 +451,114 @@ Explanation:
     print(t1.ident)
     print(t1.native_id)
     ```
+
+### Some important builin functions
+
+| Method            | Description                              |
+|-------------------|------------------------------------------|
+| `is_alive()`      | Check if a thread is running or not      |
+| `main_thread()`   | Returns the details of the main thread   |
+| `active_count()`  | Number of currently running threads      |
+| `enumerate()`     | List of all running threads              |
+| `get_native_id()` | Get the native ID of the thread          |
+
+Refer to the example - [thread4.py](Snippets/thread4.py)
+
+### Join Method
+
+The  the `join()` method is used to ensure that a thread has completed its execution before the main program (or other threads) continues running. It "joins" the thread back to the main thread and waits for it to finish.
+
+#### Example without join
+```Python
+import threading, time
+
+def task():
+    print("Thread starting...")
+    time.sleep(2)
+    print("Thread finished!")
+
+
+t = threading.Thread(target=task)
+t.start()
+
+# This line will be printed immediately after starting the thread
+print("Main program finished!")
+```
+
+Output
+```mathematica
+Thread starting...
+Main program finished!
+Thread finished!
+```
+
+### Example with join
+```Python
+import threading, time
+
+def task():
+    print("Thread starting...")
+    time.sleep(2)
+    print("Thread finished!")
+
+t = threading.Thread(target=task)
+t.start()
+
+# Wait for the thread to finish before continuing
+t.join()
+
+print("Main program finished!")
+```
+
+Output:
+```mathematica
+Thread starting...
+Thread finished!
+Main program finished!
+```
+`join()` ensures that a thread finishes before proceeding to the next part of the program.
+
+### Synchronization in threads
+To avoid race condition and establish a synchronization between threads, we have three ways - 
+1. Locks
+2. R-Lock
+3. Semaphore
+
+### Lock - Synchronization Tool
+
+A Lock is used to ensure that only one thread can access a shared resource at a time. When one thread holds the lock, other threads attempting to acquire it will fail to acquire the lock.
+
+#### Key Methods:
+
+1) `acquire(blocking=True, timeout=-1)`
+    - When `blocking=True` (default), the method call will block the thread until the lock is acquired.
+    - When `blocking=False`, the thread will not block. Instead, it will try to acquire the lock and return immediately with a True or False indicating whether the lock was acquired successfully.
+
+        ```Python
+        if lock.acquire(blocking=False):
+            try:
+                # Perform operations that require the lock
+            finally:
+                lock.release()
+        else:
+            print("Couldn't acquire lock, doing something else")
+        ```
+    - If provided, `timeout` specifies the **maximum time** (in seconds) that the thread will block while trying to acquire the lock.
+    - If the lock is not acquired within the timeout period, the method returns `False`. If the lock is acquired before the timeout, it returns `True`.
+
+        ```Python
+        if lock.acquire(timeout=5):
+            try:
+                # Perform operations that require the lock
+            finally:
+                lock.release()
+        else:
+            print("Couldn't acquire lock within 5 seconds")
+        ```
+    Refer to the example - [thread6.py](Snippets/thread6.py)
+2. `release():` Unlocks the resource, allowing other threads to acquire it.
+
+#### Example and Explanation:
+Refer to the example - [thread5.py](Snippets/thread5.py)
+
+The value of the `shared_resource` should be 200 but without a lock, the final value may vary due to race conditions.

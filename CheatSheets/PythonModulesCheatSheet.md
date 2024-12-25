@@ -42,6 +42,11 @@
 >> [d. Thread naming and identification](#thread-naming-and-identification)<br>
 >> [e. Some important builin functions](#some-important-builin-functions)<br>
 >>[f. Join method](#join-method)<br>
+>>[g. Synchronization in threads](#synchronization-in-threads)<br>
+>>>[i. Lock](#lock---synchronization-tool)<br>
+>>>[ii. R-Lock](#rlock-reentrant-lock)<br>
+>>>[iii. Semaphore](#semaphore)<br>
+>>>[iv. Bounded Semaphore](#bounded-semaphore)
 
 ## 1. Requests module
 
@@ -562,3 +567,126 @@ A Lock is used to ensure that only one thread can access a shared resource at a 
 Refer to the example - [thread5.py](Snippets/thread5.py)
 
 The value of the `shared_resource` should be 200 but without a lock, the final value may vary due to race conditions.
+
+### RLock (Reentrant Lock)
+
+- **Reentrant Lock (RLock)** allows a thread to acquire the same lock multiple times. It ensures that if a thread already holds the lock, it can continue to acquire it again without causing a deadlock, unlike a standard `Lock`.
+
+- **Use Case:** When a thread needs to enter a locked section of code recursively or repeatedly in the same thread.
+
+- Key Points:
+
+    - A regular `Lock` blocks the thread if it tries to acquire the lock again, causing a deadlock.
+    - An `RLock` allows the thread to enter the locked section multiple times without blocking itself.
+    - `RLock` holds the information about the thread which currently hold the lock and how many times it acquires the lock.
+    - `RLock` contains the same input arguments as `Lock`
+
+
+    ```Python
+    import threading
+
+    lock = threading.RLock()
+
+    def recursive_function(n):
+        lock.acquire()
+        print(f"Acquired lock, n={n}")
+        print(lock)
+        if n > 0:
+            recursive_function(n - 1)
+        lock.release()
+        print(f"Released lock, n={n}")
+
+    # Start the function
+    thread = threading.Thread(target=recursive_function, args=(3,))
+    thread.start()
+    thread.join()
+    ```
+
+    Output:
+    ```mathematica
+    Acquired lock, n=2
+    <locked _thread.RLock object owner=140067167979200 count=1 at 0x7f63edd4bd40>
+    Acquired lock, n=1
+    <locked _thread.RLock object owner=140067167979200 count=2 at 0x7f63edd4bd40>
+    Acquired lock, n=0
+    <locked _thread.RLock object owner=140067167979200 count=3 at 0x7f63edd4bd40>
+    Released lock, n=0
+    Released lock, n=1
+    Released lock, n=2
+    ```
+
+#### Difference Between Lock and RLock:
+
+- Lock:
+    - Non-reentrant: Once acquired, the same thread cannot acquire it again until it releases it.
+    - Deadlocks if the same thread tries to re-acquire the lock.
+
+- RLock:
+    - Reentrant: The same thread can acquire it multiple times without blocking.
+    - The thread must release the lock the same number of times it acquires it.
+
+### Semaphore
+Semaphore maintains an internal counter, which decreases each time a thread acquires the semaphore and increases when a thread releases it. Semaphores are useful when limiting the number of threads that can access a resource simultaneously.
+
+```python
+import threading, time
+
+# Semaphore with max 3 concurrent threads
+sem = threading.Semaphore(3)
+
+def worker(name):
+    sem.acquire()
+    print(f"{name} acquired the semaphore")
+    time.sleep(2) 
+    print(f"{name} released the semaphore")
+    sem.release()
+
+threads = []
+for i in range(5):
+    thread = threading.Thread(target=worker, args=(f"Thread-{i}",))
+    threads.append(thread)
+    thread.start()
+
+# Wait for all threads to complete
+for thread in threads:
+    thread.join()
+
+```
+
+#### Key Points:
+- `Semaphore(value=1)`: 
+    - Initializes the semaphore with a counter (default is 1).
+    - In the example above, only 3 threads can access the resource at a time.
+
+- `acquire(blocking=True, timeout=None)`: 
+    - Decreases the semaphore counter
+    - if counter is 0, the calling thread is blocked until another thread releases the semaphore.
+
+- `release(n=1)`: 
+    - Release a semaphore, incrementing the internal counter by n.
+    - **It is possible to increase the counter value beyond its initial capacity.**
+    - When it was zero and other threads are waiting for it to become larger than zero again, it sends signal to wake up n of those threads.
+
+#### Practical Scenario for release(n):
+
+Imagine a producer-consumer problem where a producer produces multiple items at once and the semaphore tracks how many resources are available. If the producer produces several items at once, it can call `release(n)` to signal the availability of those items to multiple consumers at the same time.
+
+### Bounded Semaphore
+
+A **Bounded Semaphore** is a subclass of the regular `Semaphore` in Python, but with an additional check that prevents the semaphore count from exceeding its initial value. 
+
+#### Key Features:
+- Ensures the semaphore count does not exceed the initial capacity.
+- If the `release()` method is called too many times, it raises a `ValueError` to signal improper usage.
+
+```Python
+import threading
+
+bounded_sem = threading.BoundedSemaphore(2)  # Max capacity is 2
+
+bounded_sem.release()  # Raises ValueError as exceeds initial capacity
+```
+#### **Use Case:**
+- **Semaphore:** Allows flexibility, where releasing more than acquired is acceptable.
+
+- **Bounded Semaphore:** Enforces strict resource limits, preventing misuse by ensuring we can't release more resources than initially acquired.

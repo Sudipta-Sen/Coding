@@ -690,3 +690,48 @@ bounded_sem.release()  # Raises ValueError as exceeds initial capacity
 - **Semaphore:** Allows flexibility, where releasing more than acquired is acceptable.
 
 - **Bounded Semaphore:** Enforces strict resource limits, preventing misuse by ensuring we can't release more resources than initially acquired.
+
+### Exception in Multithreading
+
+What happen when exceptions happen in one thread? Will it impact other threads?
+
+No other thread got impacted beacuse of exception in one thread. All other threads will function as it is
+
+What happens for exception in thread? - the interpreter calls threading.excepthook() with one argument i.e named tupple with 4 argument. Note that here excepthook() method is in threading module not in sys module. In normal case/main thread excepthook() in sys module was called. For created thread threading.excepthook() method was called, if there is again some exception in threading.excepthook() method then sys.excepthook() method was called. The arguments are -- 
+1) the exception class
+2) exception instance/value
+3) a traceback object
+4) thread name
+by default when we define some method to run as thread as target in Threading.Thread it internally calls run method and run method calls the target method. But generally don't define any try-catch block for exception. Some default try-catch exception block is written in run method. We can change that exception behaviour that what will happen if exception happens, by assigning our own custom defined exception handle function to the variable threading.excepthook
+
+
+#### Handling Exceptions in Python Threads
+- Impact of Exceptions in One Thread:
+
+    - If an exception occurs in one thread, it **does not affect other threads**. All other threads continue functioning as usual, independently of the thread where the exception occurred.
+
+- Exception Handling in Threads:
+    - When an exception happens in a thread, the Python interpreter automatically calls `threading.excepthook()`. This function handles uncaught exceptions in threads and is part of the `threading` module.
+
+    - **Key Difference:** In the main thread, exceptions are handled by ``sys.excepthook()``. However, for user-created threads, `threading.excepthook()` is invoked.
+
+    - If there is an exception inside the `threading.excepthook()` itself, the fallback is to call `sys.excepthook()`.
+
+        ![](Snippets/exception_thread_py.png)
+
+#### Parameters of threading.excepthook():
+`threading.excepthook()` is called with a named tuple containing four arguments:
+
+1. **Exception Class** – The class of the exception that was raised.
+2. **Exception Instance/Value** – The specific instance of the exception.
+3. **Traceback Object** – A traceback object that provides details about where the exception occurred.
+4. **Thread Name** – The name of the thread where the exception happened.
+
+#### Default Exception Handling in Threads:
+- When a method is defined as the target of a thread, Python internally calls the `run()` method, which then executes the `target` method.
+
+- Normally, we do not define a custom `try-except` block in target method. This is because `run()` has a default `try-except` block that handles uncaught exceptions.
+
+#### Customizing Thread Exception Handling:
+- You can change how exceptions are handled in threads by assigning a custom exception handler function to the `threading.excepthook` variable.
+- This allows you to define specific behavior when an exception occurs in a thread, such as logging or taking corrective action.

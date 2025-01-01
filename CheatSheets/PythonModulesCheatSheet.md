@@ -46,7 +46,10 @@
 >>>[i. Lock](#lock---synchronization-tool)<br>
 >>>[ii. R-Lock](#rlock-reentrant-lock)<br>
 >>>[iii. Semaphore](#semaphore)<br>
->>>[iv. Bounded Semaphore](#bounded-semaphore)
+>>>[iv. Bounded Semaphore](#bounded-semaphore)<br>
+>>>[v. Exception in Python](#exception-in-python)<br>
+>>>>[i. Normal Exception Handling](#normal-exception-handling)<br>
+>>>>[ii. Handling Exception in threads](#handling-exceptions-in-threads)
 
 ## 1. Requests module
 
@@ -691,21 +694,79 @@ bounded_sem.release()  # Raises ValueError as exceeds initial capacity
 
 - **Bounded Semaphore:** Enforces strict resource limits, preventing misuse by ensuring we can't release more resources than initially acquired.
 
-### Exception in Multithreading
+### Exception in Python
 
-What happen when exceptions happen in one thread? Will it impact other threads?
+### Normal Exception Handling
 
-No other thread got impacted beacuse of exception in one thread. All other threads will function as it is
+#### Uncaught Exception Example:
+- The code block provided throws an exception because it attempts to append an integer to a string. Since no try-except block is used, this results in a TypeError.
 
-What happens for exception in thread? - the interpreter calls threading.excepthook() with one argument i.e named tupple with 4 argument. Note that here excepthook() method is in threading module not in sys module. In normal case/main thread excepthook() in sys module was called. For created thread threading.excepthook() method was called, if there is again some exception in threading.excepthook() method then sys.excepthook() method was called. The arguments are -- 
-1) the exception class
-2) exception instance/value
-3) a traceback object
-4) thread name
-by default when we define some method to run as thread as target in Threading.Thread it internally calls run method and run method calls the target method. But generally don't define any try-catch block for exception. Some default try-catch exception block is written in run method. We can change that exception behaviour that what will happen if exception happens, by assigning our own custom defined exception handle function to the variable threading.excepthook
+    ```Python
+    def adder():
+        print(100+"hello")
+    adder()
+    ```
+- Output Details:
+    - **Traceback:** Provides the sequence of function calls leading to the error.
+    - **Exception Type:** Indicates the type of exception encountered (e.g., TypeError).
+    - **Error Message:** Describes the specific error, starting with the exception type
+    
+    ![](Snippets/exception_py.png)
 
+#### About sys.excepthook():
 
-#### Handling Exceptions in Python Threads
+- When exceptions are not handled using a `try-except` block, Python internally calls the `sys.excepthook()` function to handle uncaught exceptions. It is called with three arguments:
+    
+    1. **Exception Class:** The class of the raised exception (e.g., `TypeError`).
+    
+    2. **Exception Instance/Value:** The specific instance or value of the exception.
+    
+    3. **Traceback Object:** Contains details of the stack frames at the point where the exception occurred.
+
+        ![](Snippets/sys_excepthook_defination.png)
+        ![](Snippets/sys_excepthook.png)
+
+- **In an interactive session**, `sys.excepthook()` is triggered right before the control is returned to the prompt. 
+
+#### Customizing Exception Handling:
+- We can **override** the default behavior of `sys.excepthook()` by defining your custom exception handling function.
+
+- This function can modify how uncaught exceptions are displayed or logged, but it **does not prevent the code flow from stopping**. It only modifies how the exception details are output.
+
+```Python
+import sys, traceback
+
+def customeExceptionHandeling(exec_type, exce_msg, exec_traceback):
+    print("Customised exception function called")
+    print(f"\nException Type: {exec_type}")
+    print(f"Error Msg: {exce_msg}")
+    print(f"Traceback: \n{''.join(traceback.format_tb(exec_traceback))}")
+
+def adder():
+    print(100+'hello')
+
+if __name__ == "__main__":
+    sys.excepthook = customeExceptionHandeling
+    adder()
+```
+
+```mathematica
+sudipta@WSL:Snippets (main)$ python3 thread8.py 
+Customised exception function called
+
+Exception Type: <class 'TypeError'>
+Error Msg: unsupported operand type(s) for +: 'int' and 'str'
+Traceback: 
+  File "/mnt/c/Users/Sudipta/Documents/Study/Coding/CheatSheets/Snippets/thread8.py", line 14, in <module>
+    adder()
+  File "/mnt/c/Users/Sudipta/Documents/Study/Coding/CheatSheets/Snippets/thread8.py", line 10, in adder
+    print(100+'hello')
+          ~~~^~~~~~~~
+
+sudipta@WSL:Snippets (main)$ 
+```
+
+### Handling Exceptions in Threads
 - Impact of Exceptions in One Thread:
 
     - If an exception occurs in one thread, it **does not affect other threads**. All other threads continue functioning as usual, independently of the thread where the exception occurred.
@@ -734,4 +795,46 @@ by default when we define some method to run as thread as target in Threading.Th
 
 #### Customizing Thread Exception Handling:
 - You can change how exceptions are handled in threads by assigning a custom exception handler function to the `threading.excepthook` variable.
-- This allows you to define specific behavior when an exception occurs in a thread, such as logging or taking corrective action.
+
+- This allows us to define specific behavior when an exception occurs in a thread, such as logging or taking corrective action.
+
+```Python
+import traceback, threading
+
+def customeExceptionHandeling(args):
+    print(f"Customised exception function called - {args.thread.name}")
+    print(f"\nException Class: {args[0]}")
+    print(f"\nException Msg: {args[1]}")
+    print(f"\nThread Info: {args[3]}")
+    print(f"Traceback: {''.join(traceback.format_tb(args[2]))}")
+    print(f"Whole exception tupple: {args}")
+
+def adder():
+    print(100+'hello')
+
+if __name__ == "__main__":
+    t1 = threading.Thread(target=adder)
+    threading.excepthook = customeExceptionHandeling
+    t1.start()
+    t1.join()
+```
+Output:
+```mathematica
+sudipta@WSL:Snippets (main)$ python3 thread8.py 
+Customised exception function called - Thread-1 (adder)
+
+Exception Class: <class 'TypeError'>
+
+Exception Msg: unsupported operand type(s) for +: 'int' and 'str'
+
+Thread Info: <Thread(Thread-1 (adder), started 139781288167104)>
+Traceback:   File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.12/threading.py", line 1010, in run
+    self._target(*self._args, **self._kwargs)
+  File "/mnt/c/Users/Sudipta/Documents/Study/Coding/CheatSheets/Snippets/thread8.py", line 12, in adder
+    print(100+'hello')
+          ~~~^~~~~~~~
+Whole exception tupple: _thread._ExceptHookArgs(exc_type=<class 'TypeError'>, exc_value=TypeError("unsupported operand type(s) for +: 'int' and 'str'"), exc_traceback=<traceback object at 0x7f215e0a8c40>, thread=<Thread(Thread-1 (adder), started 139781288167104)>)
+sudipta@WSL:Snippets (main)$ 
+```

@@ -49,7 +49,11 @@
 >>>[iv. Bounded Semaphore](#bounded-semaphore)<br>
 >>>[v. Exception in Python](#exception-in-python)<br>
 >>>>[i. Normal Exception Handling](#normal-exception-handling)<br>
->>>>[ii. Handling Exception in threads](#handling-exceptions-in-threads)
+>>>>[ii. Handling Exception in threads](#handling-exceptions-in-threads)<br>
+
+>> [h. Life Cycle Of Thread](#life-cycle-of-thread)<br>
+>> [i. Thread Communication](#thread-communication)<br>
+>>> [i. Using Event Object](#using-an-event-object)<br>
 
 ## 1. Requests module
 
@@ -838,3 +842,117 @@ Traceback:   File "/usr/lib/python3.12/threading.py", line 1073, in _bootstrap_i
 Whole exception tupple: _thread._ExceptHookArgs(exc_type=<class 'TypeError'>, exc_value=TypeError("unsupported operand type(s) for +: 'int' and 'str'"), exc_traceback=<traceback object at 0x7f215e0a8c40>, thread=<Thread(Thread-1 (adder), started 139781288167104)>)
 sudipta@WSL:Snippets (main)$ 
 ```
+
+### Life Cycle Of Thread
+
+Threads in Python go through various stages in their life cycle. The three main stages are:
+
+1. New Thread:
+
+    - When a thread is created, it does not start running immediately.
+
+    - The thread is in the New state between creation and the invocation of the start() method.
+
+    - Example:
+
+        ```Python
+        t = threading.Thread(target=my_function)  # Thread is created but not yet started
+        ```
+
+2. Runnable Thread:
+
+    - After the `start()` method is called, the thread moves to the Runnable state.
+    
+    - In this state, the thread may be actively running or waiting for resources (like I/O or dependent threads).
+    
+    - This stage is divided into two types:
+        
+        - **Active State:** The thread is running and performing its task.
+        
+        - **Blocked State:** The thread is waiting for some event, like an I/O operation to complete or another thread's lock to be released.
+
+    - A thread may switch between the active and blocked states during its lifecycle. For example, if it waits for input, it becomes blocked, and once the input is received, it becomes active again.
+
+    - Example
+    
+        ```Python
+        t.start()  # Thread enters Runnable state
+        ```
+
+3. Terminated Thread:
+
+- A thread enters the **Terminated** state when it has finished executing or encounters an unhandled exception.
+
+- This can happen naturally when the thread completes its task or if the thread is forcibly stopped due to an error or exception.
+
+- After termination, the thread cannot be restarted.
+
+    ![](Snippets/lifecycle.png)
+
+### Thread Communication 
+Thread communication is essential for synchronizing the execution of multiple threads. There are three common ways to achieve communication between threads:
+
+1. Using an event object
+2. Using condition object
+3. Using the Queue Module
+
+### Using an Event Object
+
+The `threading` module provides a class called `Event`, which is used for signaling between two threads. Event objects are particularly useful when one thread needs to wait for a signal from another thread before continuing its execution. This communication mechanism revolves around a boolean flag (`True` or `False`).
+
+- How it works:
+
+    Initially, the flag is set to `False`. One thread will wait for a signal (flag to become `True`) from the other thread. When a specific condition is met in the first thread, it will signal the second thread to resume by setting the flag to `True`. The second thread, which is waiting on this signal, will then start its task. If the flag is `False`, the second thread will pause until it gets the signal.
+
+- Methods in the Event class:
+
+1. set():
+    - Sets the internal flag to `True`.
+    - Any thread waiting on this flag (using the `wait()` method) will be awakened and continue its work.
+
+2. reset():
+    - Resets the internal flag to `False`.
+    - The thread that was signaled will pause and wait again for the flag to become `True`.
+
+3. is_set():
+    - Returns True iff the internal flag is True.
+
+4. wait(timeout=-1):
+    - Blocks the calling thread until the internal flag is set to True.
+    - Optionally, a timeout can be provided to avoid indefinite waiting.
+
+    ```Python
+    import threading, time
+
+    e = threading.Event()
+
+    def func1():
+        print("Thread1 waiting for a event to be set")
+        e.wait()
+        print("Thread1 receive signal")
+
+    def func2():
+        print("Thread2 started working")
+        time.sleep(5)
+        print("Thread2 will now set the event")
+        e.set()
+
+
+    if __name__=="__main__":
+        t1 = threading.Thread(target=func1)
+        t2 = threading.Thread(target=func2)
+
+        t1.start()
+        t2.start()
+
+        t1.join()
+        t2.join()
+    ```
+    Output:
+    ```matmatica
+    sudipta@WSL:Snippets (main)$ python3 thread8.py
+    Thread1 waiting for a event to be set
+    Thread2 started working
+    Thread2 will now set the event
+    Thread1 receive signal
+    ```

@@ -54,7 +54,7 @@
 >> [h. Life Cycle Of Thread](#life-cycle-of-thread)<br>
 >> [i. Thread Communication](#thread-communication)<br>
 >>> [i. Using Event Object](#using-an-event-object)<br>
->>> [ii. Using condition Object]
+>>> [ii. Using condition Object](#using-condition-object)<br>
 
 ## 1. Requests module
 

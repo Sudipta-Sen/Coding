@@ -54,6 +54,7 @@
 >> [h. Life Cycle Of Thread](#life-cycle-of-thread)<br>
 >> [i. Thread Communication](#thread-communication)<br>
 >>> [i. Using Event Object](#using-an-event-object)<br>
+>>> [ii. Using condition Object]
 
 ## 1. Requests module
 
@@ -902,7 +903,7 @@ The `threading` module provides a class called `Event`, which is used for signal
 
 - How it works:
 
-    Initially, the flag is set to `False`. One thread will wait for a signal (flag to become `True`) from the other thread. When a specific condition is met in the first thread, it will signal the second thread to resume by setting the flag to `True`. The second thread, which is waiting on this signal, will then start its task. If the flag is `False`, the second thread will pause until it gets the signal.
+    Initially, the flag is set to `False`. One thread will wait for a signal (flag to become `True`) from the other thread. When a specific condition is met in the first thread, it will signal the second thread to resume by setting the flag to `True`. The second thread, which is waiting on this signal, will then start its task.
 
 - Methods in the Event class:
 
@@ -910,7 +911,7 @@ The `threading` module provides a class called `Event`, which is used for signal
     - Sets the internal flag to `True`.
     - Any thread waiting on this flag (using the `wait()` method) will be awakened and continue its work.
 
-2. reset():
+2. clear():
     - Resets the internal flag to `False`.
     - The thread that was signaled will pause and wait again for the flag to become `True`.
 
@@ -956,3 +957,57 @@ The `threading` module provides a class called `Event`, which is used for signal
     Thread2 will now set the event
     Thread1 receive signal
     ```
+
+### Using Condition Object
+
+The `Condition` object is part of the `threading`, used to facilitate communication between threads. It is commonly used when one or more threads must wait for a certain condition to be met before proceeding with their execution.
+
+#### Problems with the `Event` Object
+
+It has several limitations:
+
+1. **No control over multiple conditions:**
+
+    - The `Event` object only supports a single flag (either `True` or `False`), which is not sufficient when threads need to wait for different kinds of conditions to be met. In scenarios, where multiple threads needing to synchronize on different states, `Event` falls short. 
+
+2. **No explicit locking mechanism:**
+
+    - While `Event` allows threads to signal each other, it lacks built-in locking. Threads can only wait for the event to be set or cleared but cannot coordinate access to shared resources efficiently during this waiting period.
+
+3. **Risk of missing signals:**
+    
+    - If an `Event` is set before a thread begins waiting, the thread may miss the signal altogether, leading to bugs in the thread coordination. The thread would continue to wait even though the signal was sent.
+
+#### How the `Condition` Object Solves These Problems
+
+The `Condition` object provides more granular control over thread synchronization and allows multiple threads to communicate efficiently.
+
+1. **Wait for Multiple Conditions:**
+
+    - The `Condition` object allows threads to wait for multiple conditions, not just a single event flag. You can create complex synchronization logic where different threads wait for different states or changes in state.
+
+2. **Locking Mechanism:**
+
+    - The `Condition` object comes with an associated lock (usually a `Lock` or `RLock`), making it easier to coordinate access to shared resources while waiting for or notifying about the condition. Threads are automatically blocked while waiting for the condition and the lock ensures proper access to shared resources.
+
+3. **Avoiding Missed Signals:**
+
+    - The `Condition` object avoids the problem of missed signals through its `notify` and `notify_all` methods. A thread will wait for the condition to become true explicitly, preventing any signals from being missed. The notifying thread can signal waiting threads when the condition is met.
+
+#### Condition Object Methods
+
+Basic definition of Condition:
+
+```Python
+class threading.Condition(lock=None)
+```
+
+**Lock:** This is an optional argument. If no lock is provided, a new `RLock` will be created automatically for use with the condition variable. If a lock (either a `Lock` or `RLock` but not `Semaphore`) is provided, it will be used.
+
+- `acquire():` Acquires the lock associated with the condition.
+- `release():` Releases the lock associated with the condition.
+- `wait():` Waits for the condition to be notified. The lock is released while waiting, and reacquired once the thread is woken up.
+- `notify(): `Wakes up one thread waiting on the condition.
+- `notify_all():` Wakes up all threads waiting on the condition.
+
+**Example:** Go through this problem statement to understand the use of the Condition object for handling synchronization between multiple producers and consumers in a bounded buffer system. [Click Here](../../Core-Design-Solutions/BoundedBufferSynchronization/)

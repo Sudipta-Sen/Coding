@@ -9,6 +9,7 @@
 > 6. [lower_bound using binarySearch](#6-lower_bound-using-binarysearch)
 > 7. [String builder](#7-string-builder)
 > 8. [Priority Queue](#8-priority-queue)
+> 9. [Custom Object Comparison](#9-custom-object-comparison-with-equals-and-hashcode)
 
 ## 1. Java Collection Framework Overview
 ![plot](JavaCollection.svg)
@@ -394,4 +395,62 @@ public class Main {
         // Output: Bob (25), Alice (30), Charlie (35)
     }
 }
+```
+
+## 9. Custom Object Comparison with `equals()` and `hashCode()`
+
+Data Structures like `HashSet` determines the uniqueness of objects using the `equals()` and `hashCode()` methods. When we create custom objects and store them in a `HashSet`, Java needs to know how to compare these objects to avoid duplicates. To achieve this, we must override the `equals()` and `hashCode()` methods in our custom class.
+
+The `hashCode()` method provides a hash value for each object, and the `equals()` method checks whether two objects are logically equal. When adding objects to a `HashSet`, Java first checks the hash code to quickly find possible duplicates, and if two objects have the same hash code, it then uses `equals()` to compare them for equality.
+
+```Java
+class pair {
+    long x,y;
+    public pair(long a, long b) {
+        x = a;
+        y = b;
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        pair p = (pair) o;
+        return x == p.x && y == p.y;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + x + ", " + y + ")";
+    }
+}
+
+public class HashSetExample {
+    public static void main(String[] args) {
+        HashSet<pair> points = new HashSet<>();
+        points.add(new pair(3,4));
+        points.add(new pair(1,2));
+        points.add(new pair(3,4));
+
+        System.out.println(points); # Output: [(3, 4), (1, 2)]
+
+    }
+}
+```
+
+`Objects.hash()` is a utility method in Java that generates a hash code for a set of objects. In this example, Objects.hash(x, y) computes the hash code by combining the hashCode() of the x and y fields.
+
+```Java
+public static int hash(Object... values)
+```
+
+`getClass()` is a method inherited from the `Object` class that returns the runtime class of an object. 
+
+```Java
+pair p = new pair(1,3);
+System.out.println(p.getClass()); # Output: class pair
 ```

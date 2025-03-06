@@ -56,6 +56,7 @@
 >>> [i. Using Event Object](#using-an-event-object)<br>
 >>> [ii. Using condition Object](#using-condition-object)<br>
 
+>> [j. Deamon Threads](#daemon-threads)
 ## 1. Requests module
 
 ### 1. Get request
@@ -1011,3 +1012,75 @@ class threading.Condition(lock=None)
 - `notify_all():` Wakes up all threads waiting on the condition.
 
 **Example:** Go through this problem statement to understand the use of the Condition object for handling synchronization between multiple producers and consumers in a bounded buffer system. [Click Here](../../Core-Design-Solutions/BoundedBufferSynchronization/)
+
+### Daemon Threads
+
+A daemon thread is a background thread that runs continuously but does not block the program from exiting. When the main thread (and any other non-daemon threads) finishes, the Python interpreter will automatically exit even if daemon threads are still running. This makes daemon threads useful for tasks like background processing that should not prevent the application from terminating.
+
+- Key Characteristics of Daemon Threads:
+    - **Background Execution:** Daemon threads run in the background and typically perform non-essential tasks, like logging, monitoring, or other housekeeping tasks.
+
+    - **Program Exit:** The program does not wait for daemon threads to finish before exiting. As soon as the main thread (and all non-daemon threads) completes, the program will terminate, even if daemon threads are still running.
+
+    - **No Data Integrity Guarantee:** Since daemon threads can be abruptly terminated when the main program exits, they are not ideal for tasks that require a clean shutdown or proper resource management.
+
+#### Main Thread as Non-Daemon
+By default, the main thread is a non-daemon thread. This means the program will wait for the main thread (and any other non-daemon threads) to finish before it terminates.
+
+### Difference Between Daemon and Non-Daemon Threads:
+Daemon Thread: Runs in the background and automatically stops when the main program or non-daemon threads finish.
+Non-Daemon Thread: The program will wait for it to finish execution before exiting, making it crucial for program completion.
+
+### MS Office Example:
+Think of MS Office as the main thread. When we close MS Office, any background processes like autosave, spell checker (a daemon thread) are automatically stopped, even if they haven't completed their task, but it won't prevent you from closing the application. In contrast, if we're performing an essential task like saving a file manually (a non-daemon thread), MS Office will wait for this operation to complete before exiting, ensuring that your work is properly saved before termination.
+
+### Creating a Daemon Thread in Python
+
+To create a daemon thread in Python, we can set the `daemon` attribute to `True` directly or by using thread.setDaemon(True) **before starting the thread**, after the thread has started we can't change the daemon nature. By default, when we create a new thread, it inherits the **daemon** or **non-daemon** nature from its parent thread. If the parent thread is **non-daemon**, the new thread will also be **non-daemon** unless explicitly set otherwise. 
+
+```Python
+import threading
+import time
+
+# Define a function to be executed by the daemon thread
+def background_task():
+    while True:
+        print(f"Running background task...Daemon Status = {threading.current_thread().daemon}")
+        time.sleep(1)
+
+# Define a function to be executed by a non-daemon thread
+def regular_task():
+    print(f"Running regular task...Daemon Status = {threading.current_thread().daemon}")
+    time.sleep(5)
+    print("Non-daemon thread: Finished.")
+
+# Create a daemon thread
+daemon_thread = threading.Thread(target=background_task)
+daemon_thread.daemon = True  # Set as daemon thread
+
+# Create a non-daemon thread
+regular_thread = threading.Thread(target=regular_task)
+
+# Start both threads
+daemon_thread.start()
+regular_thread.start()
+
+# Wait for the non-daemon thread to complete
+regular_thread.join()
+
+print("Main thread: Program is exiting. Daemon thread will stop.")
+```
+
+Output:
+```ardunio
+Running background task...Daemon Status = True
+Running regular task...Daemon Status = False
+Running background task...Daemon Status = True
+Running background task...Daemon Status = True
+Running background task...Daemon Status = True
+Running background task...Daemon Status = True
+Non-daemon thread: Finished.
+Main thread: Program is exiting. Daemon thread will stop.
+```
+
+Here the daemon thread runs indefinitely in the background, while the non-daemon thread runs for a fixed amount of time. When all the non-daemon thread completes, the program exits, stopping the daemon thread without waiting for it to finish.

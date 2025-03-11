@@ -1011,7 +1011,7 @@ class threading.Condition(lock=None)
 - `notify(): `Wakes up one thread waiting on the condition.
 - `notify_all():` Wakes up all threads waiting on the condition.
 
-**Example:** Go through this problem statement to understand the use of the Condition object for handling synchronization between multiple producers and consumers in a bounded buffer system. [Click Here](../../Core-Design-Solutions/BoundedBufferSynchronization/)
+**Example:** Go through this problem statement to understand the use of the Condition object for handling synchronization between multiple producers and consumers in a bounded buffer system. [Click Here](https://github.com/Sudipta-Sen/Core-Design-Solutions/blob/main/BoundedBufferSynchronization)
 
 ### Daemon Threads
 

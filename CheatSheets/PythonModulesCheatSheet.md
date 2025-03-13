@@ -56,7 +56,9 @@
 >>> [i. Using Event Object](#using-an-event-object)<br>
 >>> [ii. Using condition Object](#using-condition-object)<br>
 
->> [j. Deamon Threads](#daemon-threads)
+>> [j. Deamon Threads](#daemon-threads)<br>
+>> [k. Timer Obejct](#timer-object)<br>
+>> [l. Barrier Object](#barrier-object)
 ## 1. Requests module
 
 ### 1. Get request
@@ -1084,3 +1086,93 @@ Main thread: Program is exiting. Daemon thread will stop.
 ```
 
 Here the daemon thread runs indefinitely in the background, while the non-daemon thread runs for a fixed amount of time. When all the non-daemon thread completes, the program exits, stopping the daemon thread without waiting for it to finish.
+
+## Timer Object
+
+The **Timer** object is a subclass of the `Thread` class from the `threading` module. It allows us to schedule a function to be executed after a specified delay (in seconds). This is useful when we want to execute a particular task **after a time delay** in a multithreaded environment, without blocking the main thread of execution.
+
+- **Key Features of Timer:**
+    - A Timer object runs a function once after a specified delay.
+    - It works asynchronously, allowing the main program to continue while waiting for the timer to expire. If the main program exits before the timer completes, the function scheduled by the timer may not be called.
+    - Timer objects can be canceled if needed before the timer expires.
+    - Timer objects should be used for simple, one-shot delayed executions. For periodic task scheduling, `sched` or `APScheduler` can be more appropriate.
+
+- **Syntax:**
+
+    ```Python
+    from threading import Timer
+
+    timer = Timer(interval, function, args=None, kwargs=None)
+    ```
+    - **interval:** The number of seconds to wait before executing the function.
+    - **function:** The function to be executed after the delay.
+    - **args:** Optional arguments to pass to the function as a tupple.
+    - **kwargs:** Optional keyword arguments to pass to the function as a dictionary.
+
+- **Methods:**
+    - **start():** Starts the timer and schedules the function to be executed after the delay.
+    - **cancel():** Cancels the timer, preventing the function from being executed if it hasn’t yet been called.
+
+- **Example: Using Timer in Multithreading**
+
+    In this example, we use a `Timer` to print a message after a 5-second delay.
+
+    ```Python
+    import threading
+
+    def delayed_function():
+        print("This function is called after a delay.")
+
+    # Create a Timer that will call the function after 5 seconds
+    timer = threading.Timer(5.0, delayed_function)
+
+    print("Timer started. Function will be called after 5 seconds.")
+
+    # Start the timer
+    timer.start()
+
+    # Main program continues running while the timer waits
+    print("Main program continues running while the timer is waiting...")
+    ```
+
+    ```matmatica
+    Timer started. Function will be called after 5 seconds.
+    Main program continues running while the timer is waiting...
+    (This message will appear after 5 seconds) This function is called after a delay.
+    ```
+
+- **Example: Canceling a Timer**
+
+    We can cancel a timer if you don’t want the scheduled function to be executed. 
+
+    ```Python
+    import threading
+
+    def delayed_function():
+        print("This function will not be called if the timer is canceled.")
+
+    # Create a Timer that will call the function after 10 seconds
+    timer = threading.Timer(10.0, delayed_function)
+
+    print("Timer started. You can cancel it before it completes.")
+
+    # Start the timer
+    timer.start()
+
+    # After 3 seconds, cancel the timer
+    cancel_timer = input("Do you want to cancel the timer (yes/no)? ")
+    if cancel_timer.lower() == "yes":
+        timer.cancel()
+        print("Timer was canceled.")
+    else:
+        print("Timer will complete and execute the function.")
+
+    ```
+
+    ```matmatica
+    Timer started. You can cancel it before it completes.
+    Do you want to cancel the timer (yes/no)? yes
+    Timer was canceled.
+    ```
+
+## Barrier Object

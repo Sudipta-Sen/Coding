@@ -1176,3 +1176,141 @@ The **Timer** object is a subclass of the `Thread` class from the `threading` mo
     ```
 
 ## Barrier Object
+
+A **Barrier** is a synchronization primitive, used in multithreading to ensure that multiple threads wait at a certain point (a barrier) before proceeding further. This is particularly useful when we want several threads to perform some part of their task concurrently, but all threads must wait until each thread reaches the barrier before continuing the next stage of execution.
+
+- **Key Features of Barrier:**
+    - It blocks a set of threads at a specific point in the code until all threads reach that point.
+    - Once the required number of threads reaches the barrier, they are all released at the same time.
+    - The number of threads required to pass the barrier is defined when the `Barrier` object is created.
+
+- **Syntax:**
+    ```Python
+    from threading import Barrier
+    barrier = Barrier(parties, action=None, timeout=None)
+    ```
+    - **parties:** Number of threads that must call `wait()` before any thread can proceed.
+    - **action:** An optional function that will be called when all threads have reached the barrier but before any of them are released.
+    - **timeout:** Optional timeout period for threads to reach the barrier.
+
+- **Methods:**
+    - **wait():** This method blocks the calling thread until all threads have reached the barrier. Once all threads reach the barrier, they are released to continue execution.
+    
+    - **reset():** Resets the barrier to its default, “unbroken” state.
+    - **abort():** Breaks the barrier, causing all waiting threads to receive a BrokenBarrierError.
+    - **parties:** Returns the number of threads required to pass the barrier.
+    - **n_waiting:** Returns the number of threads currently waiting at the barrier.
+
+- **Example: Using Barrier for Multithreading**
+
+    In the following example, multiple threads perform a task, and all of them must wait for each other before proceeding to the next stage.
+
+    ```Python
+    import threading
+    import time
+    from threading import Barrier
+
+    # Define a Barrier that will wait for 3 threads
+    barrier = Barrier(3)
+
+    def task(thread_id):
+        print(f"Thread {thread_id} is starting.")
+        time.sleep(1)  # Simulate some work being done by the thread
+        print(f"Thread {thread_id} has reached the barrier.")
+        
+        # Call wait() to ensure all threads reach the barrier
+        barrier.wait()
+        
+        print(f"Thread {thread_id} has crossed the barrier and continuing its work.")
+        
+    # Create and start 3 threads
+    threads = []
+    for i in range(3):
+        t = threading.Thread(target=task, args=(i,))
+        threads.append(t)
+        t.start()
+
+    # Wait for all threads to complete
+    for t in threads:
+        t.join()
+
+    print("All threads have completed.")
+    ```
+
+    Output:
+    ```mathematica
+    Thread 0 is starting.
+    Thread 1 is starting.
+    Thread 2 is starting.
+    Thread 0 has reached the barrier.
+    Thread 1 has reached the barrier.
+    Thread 2 has reached the barrier.
+    Thread 0 has crossed the barrier and continuing its work.
+    Thread 1 has crossed the barrier and continuing its work.
+    Thread 2 has crossed the barrier and continuing its work.
+    All threads have completed.
+    ```
+
+- **Example: Using Barrier with the `action` Parameter**
+
+    In this example, we will create a barrier that waits for three threads to reach it. Once all threads arrive, an action is performed that prints a message, and then the threads are allowed to continue.
+
+    ```Python
+    import threading
+    import time
+
+    # Action function that will be called when all threads reach the barrier
+    def barrier_action():
+        print("\nAll threads have reached the barrier. Executing action...\n")
+
+    # Create a Barrier for 3 threads with an action to be called when all threads arrive
+    barrier = threading.Barrier(3, action=barrier_action)
+
+    # Worker function for the threads
+    def worker_thread(thread_id):
+        print(f"Thread {thread_id} is working...")
+        time.sleep(thread_id)  # Simulate some work with sleep
+        print(f"Thread {thread_id} reached the barrier.")
+        
+        # Wait at the barrier
+        barrier.wait()
+        
+        print(f"Thread {thread_id} is proceeding after the barrier.")
+
+    # Create and start 3 threads
+    threads = []
+    for i in range(1, 4):
+        thread = threading.Thread(target=worker_thread, args=(i,))
+        threads.append(thread)
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    print("All threads have completed.")
+    ```
+
+    Output:
+    ```mathematica
+    Thread 1 is working...
+    Thread 2 is working...
+    Thread 3 is working...
+    Thread 1 reached the barrier.
+    Thread 2 reached the barrier.
+    Thread 3 reached the barrier.
+
+    All threads have reached the barrier. Executing action...
+
+    Thread 1 is proceeding after the barrier.
+    Thread 2 is proceeding after the barrier.
+    Thread 3 is proceeding after the barrier.
+    All threads have completed.
+    ```
+
+- **Use Case of Barrier:**
+    Barriers are particularly useful in scenarios where multiple threads need to perform individual tasks, but all must reach a certain point before continuing further. For example:
+
+    - Dividing a large task among several threads, and waiting for all threads to complete one phase before starting the next phase.
+
+    - Implementing phases of computation where each phase must wait for the completion of the previous phase by all threads.

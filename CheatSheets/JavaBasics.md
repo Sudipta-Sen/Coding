@@ -27,13 +27,18 @@
 >>> -> [Weak has-a relationship](#weak-has-a-relationship-aggregation)<br>
 >>> -> [Strong has-a relationship](#strong-has-a-relationship-composition)<br>
 2. [Java & Its ecosystem](#java--its-ecosystem-wora-jvm-jre-jdk)<br>
->> a. [WORA](#wora-write-once-run-anywhere)<br>
->> b. [JVM](#jvm-java-virtual-machine)<br>
->> c. [JDK](#jdk-java-development-kit)<br>
->> d. [JRE](#jre-java-runtime-environment)<br>
->> e. [Analogy](#real-world-analogy)<br>
->> f. [Platform Independence](#how-java-achieves-platform-independence)<br>
+> a. [WORA](#wora-write-once-run-anywhere)<br>
+> b. [JVM](#jvm-java-virtual-machine)<br>
+> c. [JDK](#jdk-java-development-kit)<br>
+> d. [JRE](#jre-java-runtime-environment)<br>
+> e. [Analogy](#real-world-analogy)<br>
+> f. [Platform Independence](#how-java-achieves-platform-independence)<br>
+> g. [Explanation public-static-void-mains](#explanation-public-static-void-mainstring-args)<br>
+> h. [File and public class](#single-file-can-have-only-1-public-class)<br>
+3. [Java Variables](#java-variables)<br>
+> a. [IEEE 754 format](#ieee-754-floating-point-representation-single-precision---32-bit)
 
+ingle file can have only 1 public class
 
 ## OOPS Concepts
 
@@ -602,10 +607,10 @@ public class Main {
 
 ### What is Java?
 - Java is a high-level, object-oriented programming language developed by **Sun Microsystems** (now owned by Oracle). 
-- Designed to be platform-independent and secure.
+- Designed to be platform-independent, secure and portable.
 
 ### WORA (Write Once, Run Anywhere)
-- ORA is Java’s core philosophy. Write the code once, and run it on Windows, Mac, Linux, or any other OS with a JVM.
+- WORA is Java’s core philosophy. Write the code once, and run it on Windows, Mac, Linux, or any other OS with a JVM.
 - Java programs are **compiled into bytecode** (not machine code).
 - This bytecode can run **on any platform** that has a compatible **Java Virtual Machine (JVM)**.
 
@@ -617,23 +622,23 @@ public class Main {
     - Security
     - Multithreading Support
 - Each OS has its own implementation of the JVM (platform dependent).
+- JVM is not a physical machine, an abstract machine. 
 - JVM provides the portability (WORA).
 - It is an abstract machine not a physical one. 
 
 Flow
 ```ssh
-Java Source Code (.java)
-        ↓ compile
+Java Source Code written in any machine(.java)
+        ↓ javac/compile
 Bytecode (.class)
-        ↓ run on
-JVM → Executes Bytecode
-        ↓ coverts to
+        ↓ JVM converts
 Machine Code (Understandble by CPU)
 ```
 
 ### JRE (Java Runtime Environment)
 - **JRE = JVM + Libraries + other components** to run Java programs.
 - It is used by end-users who **only want to run Java applications, not develop them.**
+- It can only run the **bytecode** i.e **.class** file not a **.java** file as it does not have **javac**
 -  Includes:
     - JVM
     - Core libraries (e.g., java.util, java.io)
@@ -645,15 +650,15 @@ Machine Code (Understandble by CPU)
 - It is used by developers to **write, compile, and debug Java programs**.
 -  Includes:
     - JRE (JVM + libraries)
-    - `javac` (Java compiler)
+    - `javac` (Java compiler), `input`: **platform independent code**  `output:` **independent bytecode** 
     - `javadoc`, `jdb` (documentation & debugger)
     - Development tools
 
 ### Real-World Analogy
-- **Java Source Code** = Blueprint of a building
-- **JDK** = Architect tools to draw, build, and test
-- **JRE** = A furnished building ready to use
-- **JVM** = The manager who ensures the building works the same on all lands (OS)
+- **Java Source Code** = Blueprint of a building, **platform independent**
+- **JVM** = The manager who ensures the building works the same on all lands (OS), **platform dependent**
+- **JRE** = A furnished building ready to use, **platform dependent**
+- **JDK** = Architect tools to draw, build, and test, **platform dependent**
 
 ### How Java Achieves Platform Independence
 
@@ -661,15 +666,15 @@ Step-by-Step Flow
 1. Write Java Code
 2. Compile Java Code
     - The `javac` compiler (part of JDK) compiles the **source code to bytecode**.
-    - Output: `.class` file (contains platform-independent bytecode).
+    - Output: `.class` file (contains **platform-independent** bytecode).
     - The binary executable of `javac` **is specific to your OS and architecture** — so we can't run a Windows `javac.exe` on Linux or macOS directly.
 
 3. Bytecode Generation
     - The `.class` file contains **intermediate bytecode**, not native machine code.
-    - Bytecode is **universal** across all platforms.
+    - Bytecode is **universal** across all platforms i.e **platform independent**
 4. Run Bytecode on JVM
     - Each operating system (Windows, Mac, Linux) has its own version of the JVM.
-    - The JVM reads the bytecode and **converts it to machine code** for the host system **at runtime** (using an interpreter or JIT compiler).
+    - The JVM reads the **bytecode** and **converts it to machine code** for the host system **at runtime** (using an interpreter or Just In Time (JIT) compiler).
 
 So `JVM` is the main component which makes JAVA platform independent. 
 
@@ -678,7 +683,203 @@ Your Code (.java)
         ↓ [javac]
 Bytecode (.class)
         ↓ [JVM]
-Native Code for OS
-        ↓
+Native/Machine Code for OS
+        ↓ [JRE]
 Program Executes
 ```
+
+### Some extra terms
+- JSE ---> Java Standard Edition, Core Java
+- JEE ---> Java Enterprose Edition, JSE + Certain API (Transaction API(Rollback, commit), Servlet, JSP)
+- JME ---> Java Mobile/Micro Edition, API for mobile app development 
+
+### Explanation public static void main(String[] args)
+
+1. Why is it needed?
+    - The **main() method is the entry point** of any standalone Java application.
+    - The **JVM** looks for this method to start program execution.
+
+2. Breakdown of public static void main(String[] args)
+
+    | Keyword            | Meaning                                                                                          |
+    | ------------------ | ------------------------------------------------------------------------------------------------ |
+    | **public** | Access modifier: JVM needs to access this method from outside the class. So it must be `public`. |
+    | **static** | It belongs to the class, not to an instance. JVM can call it **without creating an object**.     |
+    | **void**  | The method returns **no value**.    |
+    | **main**  | Special method name recognized by JVM as the **starting point**. JVM calls main method.                                 |
+    | **String\[] args** | **Command-line arguments**. Allows users to pass inputs when the program runs.   |
+
+3. Why static?
+    - JVM should not be forced to create an object of the class just to start execution.
+    - Hence, `main` is made `static` so it can be invoked **without object creation.**
+
+4. Why String[] args?
+    - Used to accept command-line arguments.
+    - Example:
+        ```java
+        java HelloWorld Hello ChatGPT
+        ```
+        - Here, `args[0] = "Hello"`, `args[1] = "ChatGPT"`
+
+5. Important Points
+    - If we change the signature (remove `public` or `static`), JVM will not recognize it and throw a **runtime error**:
+        ```pgsql
+        Error: Main method not found in class HelloWorld.
+        ```
+6. Alternative valid signatures:
+    - The following are valid too:
+        ```java
+        public static void main(String args[])
+        public static void main(String... args)  // varargs form
+        ```
+
+### One java file can have only 1 public class
+
+1. **Java File Structure Rule**
+    - Public class must be saved in a file with the same name as the class.
+    - Example:
+        - If we have:
+            ```java
+            public class HelloWorld { }
+            ```
+            - The file must be named: `HelloWorld.java`
+
+2. **What happens if you have multiple public classes?**
+    - Suppose:
+        ```java
+        public class A { }
+        public class B { }
+        ```
+    - This would require the file to be named both `A.java` and `B.java` simultaneously, which is **impossible**.
+    - Hence, Java restricts **only one public class per file**.
+
+3. **Can a file have multiple classes?**
+
+    Yes, but:
+    - Only **one class can be public**.
+    - The other classes must have **default (package-private) access modifier.**
+    - Example:
+        ```java
+        public class MainClass {
+            public static void main(String[] args) {
+                HelperClass.help();
+            }
+        }
+
+        class HelperClass {
+            static void help() {
+                System.out.println("Helper class method.");
+            }
+        }
+        ```
+    - For the above example, **two .class** files will be created:
+        
+        | **.class File Name** | **Reason** |
+        | -------------------- | ---------- |
+        | `MainClass.class`    | For the **public class MainClass** |
+        | `HelperClass.class`  | For the **package-private class HelperClass** |
+    
+    - **Explanation:**
+        - The Java compiler (`javac`) compiles each class separately into its own `.class` file.
+        - Even though `HelperClass` is package-private (no `public` modifier), it still gets compiled into its own bytecode file.
+        - Both classes are loaded by the JVM when needed.
+        - Command to Compile:
+            ```java
+            javac MainClass.java
+            ```
+        - Output Files:
+            ```java
+            MainClass.class
+            HelperClass.class
+            ```
+4.  **Why this restriction? (Design Reasons)**
+    
+    | Reason | Explanation    |
+    | ------ | ---- |
+    | **Maintainability** | Easier to locate a class by matching file name and class name. |
+    | **Compilation Process** | JVM & compiler use the file name to find the bytecode for a public class. |
+    | **Avoids Ambiguity** | Prevents confusion during class loading & package management. |
+    | **Best Practice** | Promotes clean project structure with one main class per file. |
+
+5. **Java Compilation Rule: File Name vs Public Class Name**
+    - If the file name is `Employee.java` but inside the file we write:
+        ```java
+        public class Student {
+            public static void main(String[] args) {
+                System.out.println("Hello from Student class.");
+            }
+        }
+        ```
+    
+        We will get this compile-time error:
+        ```kotlin
+        Employee.java:1: error: class Student is public, should be declared in a file named Student.java
+        public class Student {
+            ^
+        1 error
+        ```
+## Java Variables
+
+### IEEE 754 Floating Point Representation (Single Precision - 32-bit)
+
+| Part                    | Bits    | Description                           |
+| ----------------------- | ------- | ------------------------------------- |
+| **Sign**                | 1 bit   | 0 for positive, 1 for negative        |
+| **Exponent**            | 8 bits  | Biased exponent (bias = 127)          |
+| **Mantissa (Fraction)** | 23 bits | Fractional part (after normalization) |
+
+#### Step-by-Step Conversion of 4.125 to IEEE 754 (float)
+
+1. **Convert 4.125 to Binary**
+    - Whole Part (4):
+        - 4 in binary = `100`
+    - **Fractional Part (0.125):**
+        - 0.125 × 2 = 0.25 → 0
+        - 0.25 × 2 = 0.5 → 0
+        - 0.5 × 2 = 1.0 → 1
+    So, 0.125 in binary = `0.001`
+    - **Final Binary Representation:**
+        ```ini
+        4.125 = 100.001 (binary)
+        ```
+2. **Normalize the Binary Number**
+    - IEEE 754 needs normalized form: `1.xxxxx × 2^E`
+    - For `100.001:` Move decimal point 2 places left: `1.00001 × 2^2`
+3.  **Find the Exponent with Bias**
+    - Exponent (E) = 2
+    - Bias = 127 (for 32-bit float)
+
+    Stored exponent = E + Bias = 2 + 127 = 129
+    - 129 in binary = `10000001`
+4. **Mantissa (Fraction Part)**
+    - From normalized `1.00001`:
+        
+        Mantissa = `00001` (remaining after `1.`)
+    - Fill remaining with 0s to make 23 bits: `00001000000000000000000`
+5. **Sign Bit**
+    - 4.125 is positive → **sign bit = 0**
+6. **Final IEEE 754 Representation of 4.125**
+    - `0 10000001 00001000000000000000000`
+
+#### Why Bias is Needed?
+
+- Exponent values can be **positive or negative** (for large & small numbers).
+- But bits can only store **unsigned binary values** (positive integers).
+- To store negative exponents, **biasing is used**.
+- **Bias Mechanism:**
+    - True Exponent = Stored Exponent - Bias
+    - For single-precision float: **bias = 127**
+    
+        | True Exponent | Stored Exponent |
+        | ------------- | --------------- |
+        | -2            | 125             |
+        | 0             | 127             |
+        | +2            | 129             |
+
+#### Why 0.7f Cannot Be Represented Exactly
+- 0.7f in binary is a recurring fraction: `0.1011001100110011... (repeats infinitely)`
+- But `float` has only **23 bits of precision** for the mantissa.
+- So it stores the **closest possible approximation**.
+- Approximate value stored: `0.699999988079071044921875`
+- Printed value (rounded): `0.6999998`
+- This is just like `1/3` cannot be exactly represented in decimal.

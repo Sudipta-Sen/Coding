@@ -36,10 +36,28 @@
 > g. [Explanation public-static-void-mains](#explanation-public-static-void-mainstring-args)<br>
 > h. [File and public class](#single-file-can-have-only-1-public-class)<br>
 3. [Java Variables](#java-variables)<br>
-> a. [IEEE 754 format](#ieee-754-floating-point-representation-single-precision---32-bit)
+> a. [IEEE 754 format](#ieee-754-floating-point-representation-single-precision---32-bit)<br>
+>> i. [Decimal to IEEE754](#step-by-step-conversion-of-4125-to-ieee-754-float)<br>
+>> ii. [IEEE754 to Decimal](#ieee-754-to-decimal-conversion)<br>
+>> iii. [Why bias is needed](#why-bias-is-needed)<br>
+>> iv. [0.7f representation](#why-07f-cannot-be-represented-exactly)<br>
+>> v. [IEE754 and 2s-complement](#ieee754-and-2s-complement)<br>
 
-ingle file can have only 1 public class
+> b. [Static Type & Strong Type Language](#static-type--strong-type-language)<br>
+> c. [Type Conversion](#type-conversion)<br>
+>> i. [Implicit Type Conversion](#implicit-type-conversion-wideningautometic-conversion--type-promotion)<br>
+>> ii. [Explicit Type Conversion](#explicit-type-conversion-narrowing-conversion--type-casting)<br>
+>> iii. [Type Promotion](#type-promotion-in-expressions)<br>
 
+> d. [Data Types](#data-types)<br>
+>> i. [Primitive Types](#primitive-data-types)<br>
+>> ii. [Reference Types](#non-primitive-data-types-reference-types)<br>
+
+> e. [Strings](#strings)<br>
+>> i. [String Immutability](#string-immutability)<br>
+>> ii. [String literal and Constant Pool](#string-literal--string-constant-pool)<br>
+
+> f. [Wrapper Class](#wrapper-class)
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -51,7 +69,7 @@ ingle file can have only 1 public class
 
     | ***Aspect***  | ***Procedural Programming***   | OOPS          |
     |---------------------|--------------------|--------------------------|
-    | Structure           | Program is structured and divided into parts as procedures (methods)       | Code is structured around classes and objects      |
+    | Structure           | Program is structured and divided into parts as procedures c(methods)       | Code is structured around classes and objects      |
     | Core Concept        | Functions and step-by-step instructions    | Objects and classes representing entities    |
     | Data                | Data is passed to functions                      | Data is encapsulated within objects    |
     | Reusability         | Difficult; requires duplicate or refactored code | Promotes reuse through inheritance and composition |
@@ -861,6 +879,29 @@ Program Executes
 6. **Final IEEE 754 Representation of 4.125**
     - `0 10000001 00001000000000000000000`
 
+#### IEEE 754 to Decimal Conversion
+
+Formula: 
+```markdown
+Value=(−1)^sign × 2^(exponent−bias) * (1.mantissa bits)
+```
+Example Calculation
+
+For IEEE 754 binary:
+`0 10000001 00001000000000000000000`
+
+1. Sign: 0 → positive number
+2. Exponent:
+    - Binary: 10000001 = 129
+    - Bias: 127
+    - True exponent: 129 - 127 = 2
+3. Mantissa:
+    - With implicit 1: 1.00001
+    - Decimal: 1 + 0.03125 = 1.03125
+4. Final Value:
+    ```markdown
+    Value = (-1)^0 × 2^2 × 1.03125 = 1 × 4 × 1.03125 = 4.125
+    ```
 #### Why Bias is Needed?
 
 - Exponent values can be **positive or negative** (for large & small numbers).
@@ -883,3 +924,182 @@ Program Executes
 - Approximate value stored: `0.699999988079071044921875`
 - Printed value (rounded): `0.6999998`
 - This is just like `1/3` cannot be exactly represented in decimal.
+- We can use **BigInteger** to solve this problem.
+
+#### IEEE754 and 2's complement
+
+| **Data Type**       | **Storage Format in Java**        | **Why?** |
+| ------------------- | --------------------------------- | ------   |
+| **float, double**          | Stored using **IEEE 754 Floating-Point Standard**   | Efficient for integers, simple arithmetic |
+| **byte, short, int, long** | Stored using **2's Complement Binary Representation** | Needed for fractions, exponents, and precision |
+
+
+### Static Type & Strong Type Language
+
+1. **Static Typing**
+    - **Definition:**
+        Java is a statically typed language, meaning **variable types are checked at compile time**.
+    - **Key Points:**
+        - We must declare the type of every variable.
+        - Type errors (like assigning a String to an int) are caught **before the program runs.**
+    - **Example:**
+        ```java
+        int number = 10;   // Correct
+        number = "text";   // Compile-time error (type mismatch)
+        ```
+
+2. **Strong Typing**
+    - **Definition:** Java is also a strongly typed language, meaning it **strictly enforces type rules** and **does not allow implicit type conversions** that can lead to errors.
+    - Key Points:
+        - We **cannot mix incompatible types** without explicit casting.
+        - Prevents unintended behaviors due to loose conversions.
+        - Static type means Java checks variable types at compile time. Strong type means Java does not allow mixing different types without clear conversion.
+    - **Example:**
+        ```java
+        int num = 10;
+        double val = num;   // Allowed (widening conversion)
+
+        String text = "123";
+        int invalid = text; // Compile-time error: incompatible types
+        ```
+    - To convert String to int, we must do:
+        ```java
+        int valid = Integer.parseInt(text);
+        ```
+
+3. **Difference Between Static Type & Strong Type**
+    | Feature                 | Static Typing                 | Strong Typing                          |
+    | ----------------------- | ----------------------------- | -------------------------------------- |
+    | **When Checked**        | Compile Time                  | Runtime (enforces strict type usage)   |
+    | **Type Declaration**    | Required                      | Type safety is strictly maintained     |
+    | **Implicit Conversion** | Limited automatic conversions | No unsafe implicit conversions allowed |
+    | **Examples**            | Java, C, C++                  | Java, Python, Ruby                     |
+
+3. **Java vs Python: Static Typing vs Dynamic Typing**
+    | Feature | **Java** | **Python**  |
+    | ---------------- | ----------- | -------------- |
+    | **Typing Discipline**    | Static Typed, Strongly Typed | Dynamic Typed, Strongly Typed |
+    | **Type Checking**        | Compile-time    | Runtime      |
+    | **Variable Declaration** | Type must be declared explicitly  | Type is inferred dynamically at runtime  |
+    | **Type Safety**          | Strongly enforces types  | Strongly enforces types but at runtime       |
+    | **Type Inference**       | Limited (Java 10+ with `var` keyword) | Fully dynamic type inference  |
+    | **Code Example**         | `java<br>int x = 10;<br>x = "hello"; // Error` | `python<br>x = 10<br>x = "hello"  # Allowed` |
+    | **Advantages**           | Early error detection, better performance  | Faster prototyping, flexible coding |
+    | **Disadvantages**        | More verbose, less flexible                    | Errors can show up late (runtime errors)     |
+    | **Use Case Suitability** | Large-scale, performance-critical systems | Scripting, rapid development, data science   |
+
+### Type Conversion
+
+Type conversion refers to converting a variable of one data type into another. It can happen implicitly (automatically) or explicitly (manually).
+
+#### Implicit Type Conversion (Widening/Autometic Conversion / Type Promotion)
+- Done automatically by Java.
+- Converts smaller data types to larger data types (no data loss).
+- Example: `byte → short → int → long → float → double`
+- Example:
+    ```java
+    int a = 10;
+    double b = a;  // Implicit conversion (int to double)
+    System.out.println(b);  // Output: 10.0
+    ```
+
+#### Explicit Type Conversion (Narrowing Conversion / Type Casting)
+- Done **manually** by the programmer.
+- Converts **larger data types to smaller data types** (possible data loss).
+- Syntax: `(targetType) value`
+    ```java
+    double a = 10.75;
+    int b = (int) a;  // Explicit conversion (double to int)
+    System.out.println(b);  // Output: 10 (fractional part lost)
+    ```
+
+#### Type Promotion in Expressions
+- During expressions, smaller types are promoted automatically.
+- Example: `byte`, `short`, and `char` are promoted to `int` in expressions.
+- Example:
+    ```java
+    byte a = 120;
+    byte b = 20;
+    int c = a + b;  // 'a' and 'b' promoted to int, Output: 140
+    byte d = (byte) (a+b); //Outpput: -116
+    ```
+    - Since byte range is -128 to 127, and here `a+b=130` which is crossing the byte range, `a` and `b` are autometically promoted to int.
+    - Since `a` and `b` are autometically promoted to int, if we want to store the result in byte variable `d` then we need to explicitly downcast it which results in lossy conversion. 
+
+### Data Types
+
+Java is a strongly typed language, which means every variable must be declared with a data type. Data types specify the size and type of values that can be stored.
+
+#### Primitive Data Types
+
+Primitive data types are the basic building blocks of data manipulation in Java. They are predefined by the language and are not objects.
+
+
+| Type      | Size (bits) | Range                                      | Default Value |
+|-----------|-------------|---------------------------------------------|---------------|
+| byte      | 8           | -128 to 127                                 | 0             |
+| short     | 16          | -32,768 to 32,767                           | 0             |
+| int       | 32          | -2,147,483,648 to 2,147,483,647             | 0             |
+| long      | 64          | -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 | 0L            |
+| float     | 32          | ~±3.40282347E+38F (approx 7 decimal digits) | 0.0f          |
+| double    | 64          | ~±1.79769313486231570E+308 (approx 15 digits)| 0.0d         |
+| char      | 16          | 0 to 65,535 (Unicode values)                | '\u0000'      |
+| boolean   | 1           | true / false                               | false         |
+
+#### Non-Primitive Data Types (Reference Types)
+
+Non-primitive types are created by the programmer or provided by Java libraries. They are **references to objects stored in the heap memory**.
+
+Types of Non-Primitive Data Types: `String`, `Arrays`, `Classes`, `Interfaces`, `Enums`
+
+### Strings
+
+#### String Immutability 
+- In Java, String is **immutable**, meaning **once created, its value cannot be changed**.
+- When you try to modify a String, **a new String object is created**, the original remains unchanged.
+- Example
+    ```java
+    String str = "Hello";
+    str = str + " World";  // Creates a new String object "Hello World"
+    ```
+    `"Hello"` remains **unchanged**, and a new `"Hello World"` String object is **created**.
+
+#### String Literal & String Constant Pool
+- A **String literal** is a sequence of characters enclosed in double quotes (" ").
+- **String Pool** (also called **String Constant Pool**) **is a special memory area** inside the Java **Heap Memory** where **String literals** are stored
+- **Example:**
+    ```Java
+    String s1 = "Java"; //"Java" is String literal
+    String s2 = "Java";
+    String s3 = new String("Java"); //"Java" is String literal
+    ```
+-  **Behavior:**
+    - `s1` and `s2` refer to the **same object** in the String Pool.
+    - `s3` creates **a new object in heap memory**, even if the value is same.
+- **Comparison:**
+    ```java
+    System.out.println(s1 == s2); // true (same reference from String Pool)
+    System.out.println(s1 == s3); // false (different objects)
+    System.out.println(s1.equals(s3)); // true (value comparison)
+    ```
+    - Memory address stored in `s1` and `s2` are same but memory address in `s1` and `s3` are different.
+    - Both `s1` and `s2` will point to the **same object** in the **String Pool**.
+    - **'new' keyword**	Forces creation of **new String object in heap, bypassing pool**.
+    - `==` compares references, .`equals()` compares values.
+
+- **Why String Pool?**
+    - Memory Optimization: Avoids creating duplicate String objects.
+    - Performance: Reusing same object reduces memory overhead.
+    - Immutable Strings: Safe to share across references.
+
+### Wrapper Class
+
+- Wrapper classes provide a way to use **primitive data types as objects**.
+- Every primitive type in Java has a corresponding wrapper class in the `java.lang` package.
+- Wrapper classes are immutable.
+- Benefit
+    - Enable **autoboxing/unboxing** (automatic conversion between primitive & object).
+        - Autoboxing: Primitive → Wrapper Object
+        - Unboxing: Wrapper Object → Primitive
+    - Provide many utility methods. Such as: `parseInt()`, `valueOf()`, `toString()`
+    - Enable **pass by reference** in primitive data types

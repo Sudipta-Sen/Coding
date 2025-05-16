@@ -18,8 +18,8 @@
 >> v. [Diamond Problem](#diamond-problem)<br>
 
 > e. [Types of polymorphism](#types-of-polymorphism)<br>
->> i. [Compile Time](#1-compile-time-polymorphism-static-binding--method-overloading)<br>
->> ii. [Runtime Polymorphism](#2-runtime-polymorphism-dynamic-binding--method-overriding)<br>
+>> i. [Compile Time / Overloading](#1-compile-time-polymorphism-static-binding--method-overloading)<br>
+>> ii. [Runtime Polymorphis / Overiding](#2-runtime-polymorphism-dynamic-binding--method-overriding)<br>
 
 > f. [Is-a and has-a relationship](#is-a-and-has-a-relationship)<br>
 >> i. [Is-a relationship](#is-a-relationship-inheritance)<br>
@@ -29,8 +29,8 @@
 2. [Java & Its ecosystem](#java--its-ecosystem-wora-jvm-jre-jdk)<br>
 > a. [WORA](#wora-write-once-run-anywhere)<br>
 > b. [JVM](#jvm-java-virtual-machine)<br>
-> c. [JDK](#jdk-java-development-kit)<br>
-> d. [JRE](#jre-java-runtime-environment)<br>
+> c. [JRE](#jre-java-runtime-environment)<br>
+> d. [JDK](#jdk-java-development-kit)<br>
 > e. [Analogy](#real-world-analogy)<br>
 > f. [Platform Independence](#how-java-achieves-platform-independence)<br>
 > g. [Explanation public-static-void-mains](#explanation-public-static-void-mainstring-args)<br>
@@ -57,7 +57,18 @@
 >> i. [String Immutability](#string-immutability)<br>
 >> ii. [String literal and Constant Pool](#string-literal--string-constant-pool)<br>
 
-> f. [Wrapper Class](#wrapper-class)
+> f. [Wrapper Class](#wrapper-class)<br>
+
+4. [Java Methods](#java-methods)<br>
+> a. [Access Specifiers](#access-specifiers)<br>
+> b. [Static Methods](#static-methods)<br>
+>> i. [Method Hiding](#method-hiding)<br>
+
+> c. [Final Method](#final-method)<br>
+> d. [Abstract Method](#abstract-method)<br>
+> e. [Variable Number of Arguments](#variable-number-of-arguments)<br>
+> f. [Constructor](#constructor)<br>
+>> i. [Constructor Chaining](#constructor-chaining)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -490,6 +501,10 @@ class Animal {
     void sound() {
         System.out.println("Animal makes a sound");
     }
+
+    void color() {
+        System.out.println("Define animal color here");
+    }
 }
 
 class Dog extends Animal {
@@ -502,6 +517,10 @@ class Cat extends Animal {
     void sound() {
         System.out.println("Cat meows");
     }
+
+    void color() {
+        System.out.println("Cat color is white");
+    } 
 }
 
 public class Main {
@@ -509,8 +528,14 @@ public class Main {
         Animal a1 = new Dog();
         Animal a2 = new Cat();
 
-        a1.sound();  // Dog barks
-        a2.sound();  // Cat meows
+        a1.sound();  // Output: Dog barks
+        a2.sound();  // Output: Cat meows
+
+        a1.color();  // Output: Define animal color here
+        a2.color(); // Output: Cat color is white
+
+        // Dog d = new Animal();  // ❌ Not Allowed, incompatible types: Animal cannot be converted to Dog
+    
     }
 }
 ```
@@ -518,6 +543,7 @@ public class Main {
 - Key Points:
     - Resolved at runtime using **dynamic method dispatch**.
     - Allows Java to support **late binding**.
+    - In line `a1.color()` since there is no method named `color` in `Dog` class, so it calls the parent class method but in `a2.color()` it finds the method `color` in `Cat` class.
 
 - Execution Flow:
     - A method is called on an object.
@@ -1103,3 +1129,381 @@ Types of Non-Primitive Data Types: `String`, `Arrays`, `Classes`, `Interfaces`, 
         - Unboxing: Wrapper Object → Primitive
     - Provide many utility methods. Such as: `parseInt()`, `valueOf()`, `toString()`
     - Enable **pass by reference** in primitive data types
+
+## Java Methods
+
+### Access Specifiers
+
+Access specifiers (or access modifiers) in Java define the visibility or scope of classes, variables, constructors, and methods. The four main access levels are:
+
+| Access Specifier | Within Class | Within Package | Outside Package (subclass) | Outside Package (non-subclass) |
+| ---------------- | ------------ | -------------- | -------------------------- | ---------------- |
+| `public`  | ✅ Yes     | ✅ Yes          | ✅ Yes                      | ✅ Yes    |                      |
+| `protected` | ✅ Yes   | ✅ Yes          | ✅ Yes                      | ❌ No     |                     |
+| (default)   | ✅ Yes        | ✅ Yes     | ❌ No                       | ❌ No     |                      |
+| `private`   | ✅ Yes        | ❌ No           | ❌ No       | ❌ No      |
+
+**Package:** A namespace that organizes a set of related classes and interfaces. Classes within the same package can access each other's package-private members.
+
+#### Visual Representation
+
+Let's consider the following package structure:
+
+```markdown
+com.example
+├── shapes
+│   ├── Shape.java
+│   └── Circle.java
+├── geometry
+│   ├── GeometryUtils.java   <-- Non-Subclass in different package
+│   └── ExtendedShape.java   <-- Subclass in different package
+
+```
+1. **Shape.java (Base Class)**
+
+    ```java
+    package com.example.shapes;
+
+    public class Shape {
+        public int publicVar = 1;
+        protected int protectedVar = 2;
+        int defaultVar = 3; // package-private
+        private int privateVar = 4;
+
+        public void publicMethod() { }
+        protected void protectedMethod() { }
+        void defaultMethod() { } // package-private
+        private void privateMethod() { }
+    }
+    ```
+
+2. **Circle.java (Subclass in Same Package)**
+    ```java
+    package com.example.shapes;
+
+    public class Circle extends Shape {
+        public void accessMembers() {
+            System.out.println(publicVar);       // ✅ Accessible
+            System.out.println(protectedVar);    // ✅ Accessible
+            System.out.println(defaultVar);      // ✅ Accessible
+            // System.out.println(privateVar);   // ❌ Not Accessible
+
+            publicMethod();                      // ✅ Accessible
+            protectedMethod();                   // ✅ Accessible
+            defaultMethod();                     // ✅ Accessible
+            // privateMethod();                  // ❌ Not Accessible
+        }
+    }
+    ```
+3. **GeometryUtils.java (Non-Subclass in Different Package)**
+    ```java
+    package com.example.geometry;
+
+    import com.example.shapes.Shape;
+
+    public class GeometryUtils {
+        public void accessMembers() {
+            Shape shape = new Shape();
+            System.out.println(shape.publicVar);       // ✅ Accessible
+            // System.out.println(shape.protectedVar); // ❌ Not Accessible
+            // System.out.println(shape.defaultVar);   // ❌ Not Accessible
+            // System.out.println(shape.privateVar);   // ❌ Not Accessible
+
+            shape.publicMethod();                      // ✅ Accessible
+            // shape.protectedMethod();                // ❌ Not Accessible
+            // shape.defaultMethod();                  // ❌ Not Accessible
+            // shape.privateMethod();                  // ❌ Not Accessible
+        }
+    }
+    ```
+4. **ExtendedShape.java (Subclass in a Different Package)**
+    ```java
+    package com.example.geometry;
+
+    import com.example.shapes.Shape;
+
+    public class ExtendedShape extends Shape {
+        public void accessMembers() {
+            System.out.println(publicVar);         // ✅ Accessible (public)
+            System.out.println(protectedVar);      // ✅ Accessible (protected via inheritance)
+            // System.out.println(defaultVar);     // ❌ Not accessible (default is package-private)
+            // System.out.println(privateVar);     // ❌ Not accessible (private)
+
+            publicMethod();                        // ✅ Accessible
+            protectedMethod();                     // ✅ Accessible (via inheritance)
+            // defaultMethod();                    // ❌ Not accessible
+            // privateMethod();                    // ❌ Not accessible
+        }
+    }
+    ```
+
+### Static Methods
+
+A **static method** belongs to the **class**, not to any specific instance (object) of the class. It can be called **without creating an object**.
+
+- **Key Points:**
+    - Declared using the `static` keyword.
+    - Can be called using the **class name** directly.
+    - **Cannot access instance variables or instance methods directly.**
+    - Cannot use `this` or `super` inside static methods.
+    - Can only call other **static methods** and access **static variables** directly.
+    - Polymorphism (like overriding) doesn’t apply to static methods. As overriding is runtime but static is complie time. 
+
+#### Method Hiding
+
+**Method hiding** occurs when a **subclass defines a static method with the same signature as a static method in its superclass**. This is different from method **overriding**, which applies only to non-static (instance) methods.
+
+- **Example:**
+    ```Java
+    class Parent {
+        static void display() {
+            System.out.println("Static method in Parent");
+        }
+    }
+
+    class Child extends Parent {
+        static void display() { // hiding, not overriding
+            System.out.println("Static method in Child");
+        }
+    }
+
+    public class Main {
+        public static void main(String[] args) {
+            Parent par1 = new Child();
+            Parent par2 = new Parent();
+            Child chd1 = new Child();
+
+            par1.display(); //Output: Static method in Parent
+            par2.display(); //Output: Static method in Parent
+            chd1.display(); //Output: Static method in Child
+
+            Parent.display(); //Output: Static method in Parent
+            Child.display(); //Output: Static method in Child
+        }
+    }
+    ```
+
+- So in method hiding, the static method called is based on the **reference type** — no runtime binding occurs.
+    
+    But in method overriding, the method called is based on the **object type** due to **runtime polymorphism.**
+
+- **What if you use `@Override` with static method?**
+    ```Java
+    class Parent {
+        static void show() {}
+    }
+
+    class Child extends Parent {
+        @Override      // ❌ Compile-time error!
+        static void show() {}
+    }
+    ```
+
+    ❌ Java will throw an error: Method does not override or implement a method from a supertype
+
+### Final Method
+
+- A method or variable declared with the `final` keyword **cannot be overridden** by subclasses.
+- Ensures that the method's behavior remains **unchanged in inheritance hierarchy**.
+- Syntax:
+    ```java
+    class Parent {
+        final void display() {
+            System.out.println("This is a final method.");
+        }
+    }
+    ```
+    Effects:
+    ```java
+    class Child extends Parent {
+        // Compilation Error: Cannot override the final method from Parent
+        void display() {
+            System.out.println("Trying to override.");
+        }
+    }
+    ```
+
+### Abstract Method
+- Declared using the `abstract` keyword in an **abstract class**.
+- **Has no body**; must be **overridden** by the first concrete subclass.
+- Syntax:
+    ```java
+    abstract class Animal {
+        abstract void sound();
+    }
+    ```
+    Effect:
+    ```java
+    class Dog extends Animal {
+        void sound() {
+            System.out.println("Dog barks");
+        }
+    }
+    ```
+
+### Variable Number of Arguments
+
+- Key Points:
+    - Java allows a method to accept **zero or more arguments** of the same type using **varargs** (variable-length argument lists).
+    - Only one varargs parameter is allowed in a method.
+    - **It must be the last parameter** in the method signature.
+
+- Syntax:
+    ```java
+    returnType methodName(type... variableName)
+    ```
+    - Internally, varargs are treated as an array of the specified type. The compiler converts `int... numbers` to `int[] numbers`.
+
+- Example
+    ```java
+    public class VarargsExample {
+        static void printNumbers(int... numbers) {
+            for (int num : numbers) {
+                System.out.print(num + " ");
+            }
+            System.out.println();
+        }
+
+        public static void main(String[] args) {
+            printNumbers();               // Output: (empty line)
+            printNumbers(1);              // Output: 1
+            printNumbers(1, 2, 3, 4, 5);  // Output: 1 2 3 4 5 
+        }
+    }
+    ```
+- We cannot declare multiple varargs in a single method like:
+    ```java
+    void my_method(int... varInt, String... varStr); // ❌ Not allowed
+    ```
+    - Because Java wouldn’t know **where one vararg ends and the next starts** when calling the method. It causes ambiguity during method invocation.
+
+- But we can do this
+    ```java
+    void my_method(String label, int... numbers); // ✅ Allowed
+    ```
+    - We can put any numberof fixed parameters initially and then only one **arrays or varargs** at the end.
+
+### Constructor
+
+A constructor in Java is a special method used to **initialize objects**. It is automatically called when an object of a class is created.
+
+- Key Characteristics:
+    - Constructor's name must be same as the class name
+    - A constructor doesn’t have a return type not even `void` because:
+        - It’s **not explicitly called** — the JVM knows to return the instance being created.
+        - Adding a return type would turn it into **a regular method.**
+
+- Why Constructor Cannot Be:
+    - **`static`** :
+        - Constructors are used to initialize **instances**, not classes. Static methods belong to the class, not objects.
+        - If construtors becomes static then it can't initialise instance variable.
+    - **`final`**: `final` means it **cannot be overridden**, but constructors are **not inherited** or overridden, so no point to add final keyword
+    - **`abstract`**: 
+        - Abstract methods must be **overridden**, but constructors **can't be inherited or overridden**, so this makes no sense.
+        - We can't create an instace of an abstrct class. Abstract method can only belongs to abstract method. 
+    - **`synchronized`**: constructors can be **synchronized** using synchronized blocks, but not using the `synchronized` keyword directly.
+
+- Does an Interface Have a Constructor?
+
+    No, interfaces cannot have constructors because:
+        - Interfaces **cannot be instantiated** directly.
+        - Constructors are meant to initialize objects, and we can’t create an object of an interface.
+
+#### Constructor Chaining 
+
+Constructor chaining is the process of calling one constructor from **another constructor** within the **same class** or from the **parent class**.
+
+- The **constructor call must be the first statement in the constructor**.
+- You can use only one `this()` or `super()` call per constructor.
+
+There are two types of constructor chaining:
+
+1. Within the Same Class
+
+    We use `this()` to call another constructor in the same class.
+
+    ```java
+    class Car {
+        String model;
+        int year;
+
+        Car() {
+            System.out.println("No argument constructor called");
+        }
+
+        Car(String model, int year) {
+            this(); // If this is not added call to Car() will not occur
+            this.model = model;
+            this.year = year;
+            System.out.println("constructor with argument called");
+            // this() -- Error: call to this must be first statement in constructor
+        }
+
+    }
+
+    class Main {
+        public static void main(String[] args) {
+            Car c = new Car("SVU", 2023);
+            <!-- Output:
+            No argument constructor called
+            constructor with argument called -->
+        }
+    }
+    ```
+
+2. From a Parent Class
+
+    ```java
+    class Vehicle {
+        Vehicle() {
+            System.out.println("Vehicle constructor");
+        }
+    }
+
+    class Car extends Vehicle {
+        Car() {
+            super();  // Calls Vehicle() constructor
+            System.out.println("Car constructor");
+        }
+    }
+
+    class Main {
+        public static void main(String[] args) {
+            Car c = new Car();
+            <!-- Output:
+            Vehicle constructor
+            Car constructor -->
+        }
+    }
+    ```
+    - If we **don't explicitly call** `super()`, **the compiler automatically inserts a call to the parent class's no-argument constructor**.
+
+    - **Example**:
+        ```java
+        class Vehicle {
+            Vehicle(int id) {
+                System.out.println("Vehicle constructor - "+id);
+            }
+        }
+
+        class Car extends Vehicle {
+            Car() {
+                super(5);  // Calls Vehicle() constructor
+                System.out.println("Car constructor");
+                
+            }
+        }
+
+
+        class Main {
+            public static void main(String[] args) {
+                Car c = new Car();
+                <!-- Output:
+                Vehicle constructor - 5
+                Car constructor -->
+            }
+        }
+        ```
+        ❌ If we don't explicitly call `super(5)` and since the parent class doesn't have a no-argument constructor, the compiler will throw an error.
+
+        This is because **Java tries to insert a default call** to `super()`, but since no such constructor exists in the parent class, compilation fails.

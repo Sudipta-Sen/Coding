@@ -69,6 +69,25 @@
 > e. [Variable Number of Arguments](#variable-number-of-arguments)<br>
 > f. [Constructor](#constructor)<br>
 >> i. [Constructor Chaining](#constructor-chaining)<br>
+
+5. [Memory Managment](#memory-managment)<br>
+> a. [Memory Brakdown](#memory-brakdown)<br>
+> b. [Memory Areas](#memory-areas)<br>
+>> i. [Heap memory](#heap-memory)<br>
+>>> - [Minor GC explanation](#java-minor-gc-cycle-explained-young-generation)<br>
+>>> - [Surviour Space](#survivor-space-rotation)<br>
+
+>> ii. [Stack Memory](#stack-memory)<br>
+>> iii. [Metaspace](#method-area-metaspace)<br>
+>> iv. [Progam Counter](#program-counter-pc-register)<br>
+
+> c. [Garbage Collection](#garbage-collection)<br>
+> d. [References and their impact on gc](#references-and-their-impact-on-gc)<br>
+>> i. [Strong Reference](#strong-reference-default)<br>
+>> ii. [Soft Reference](#soft-reference-javalangrefsoftreference)<br>
+>> iii. [Weak Reference](#weak-reference-javalangrefweakreference)<br>
+>> iv. [Phantom Reference](#phantom-reference-javalangrefphantomreference)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -1507,3 +1526,197 @@ There are two types of constructor chaining:
         ❌ If we don't explicitly call `super(5)` and since the parent class doesn't have a no-argument constructor, the compiler will throw an error.
 
         This is because **Java tries to insert a default call** to `super()`, but since no such constructor exists in the parent class, compilation fails.
+
+## Memory Managment
+
+Java memory is divided into several areas during runtime, managed by the JVM:
+
+### Memory Brakdown
+
+```java
+public class MemoryDemo {
+
+    static int staticVar = 100; // static variable
+
+    int instanceVar = 50; // instance variable
+
+    public static void main(String[] args) {
+        int localVar = 10; // local variable
+
+        MemoryDemo obj = new MemoryDemo(); // object created in heap
+
+        obj.display();
+    }
+
+    void display() {
+        String message = "Hello"; // reference + object
+        System.out.println(message + ", InstanceVar = " + instanceVar);
+    }
+}
+```
+
+| **Code Element**           | **Memory Area**   | **Explanation**       |
+| -------------------------- | --------- | ------------------------------ |
+| `main()` and `display()`   | **Stack (Call Stack)**   | Each method call gets a new stack frame for parameters and local variables. When JVM gets `}` for a method indicating scope of the method is finished its deletes the stack frame not the heap memory. Heap will be taken care by garbage collector.|
+| `static int staticVar`     | **Method Area (Metaspace)**  | Class-level static variable loaded once per class. |
+| `int instanceVar`          | **Heap (Object)**  | Part of the object created on the heap. |
+| `MemoryDemo obj = new...`  | **Stack (Reference)** + **Heap (Object)**      | Reference is on stack, object is on heap.                                   |
+| `int localVar`             | **Stack**    | Local primitive variable inside main method.    |
+| `String message = "Hello"` | **Stack (Reference)** + **String Pool (Heap)** | Reference is on stack; string literal is stored in the String Pool.         |
+
+### Memory Areas
+
+#### Heap Memory
+- Used to store **objects and class instances**.
+- Managed by the **Garbage Collector**.
+- All thread shares a common heap memory
+- Divided into:
+    - Young Generation - Stores newly created objects, Divided into:
+        - Eden Space
+        - Survivor Spaces: `S0` and `S1` (also called `Survivor From` and `Survivor To`)
+    - Old Generation
+        - Stores long-lived objects.
+        - Cleaned by **Major GC**:
+            - Less frequent than **Minor GC**.
+            - More expensive in terms of performance.
+    - Metaspace (Java 8+)
+        - Stores class metadata, not in the heap anymore.
+        - Grows dynamically based on system memory (unlike PermGen in older versions).
+
+##### Java Minor GC Cycle Explained (Young Generation)
+
+In Java, **objects are first created** in the Eden space, which is part of the **Young Generation**. The Young Generation is designed for short-lived objects and is managed by **Minor Garbage Collection (Minor GC).**
+
+Example Walkthrough: GC Cycle
+
+-  **Step 1:** Object Creation in Eden
+    - Suppose we create objects `O1`, `O2`, `O3`, `O4`, `O5`.
+    - All of them are placed in the **Eden space**.
+
+- **Step 2:** First GC Run
+    - **GC (Minor GC)** triggers and uses **Mark-and-Sweep algorithm:**
+    - **Mark Phase:** Identifies unreachable objects → suppose `O1`, `O2` are marked (no references).
+    - Sweep Phase:
+        - Deletes `O1`, `O2`.
+        - Moves surviving objects (`O3`, `O4`, `O5`) to `Survivor Space S0`.
+        - These surviving objects now have **age = 1**.
+
+-  **Step 3:** New Object Allocation
+    - New objects `O6`, `O7` are created → stored in **Eden again**.
+
+- **Step 4:** Second GC Run
+    - GC runs again:
+        - Marks `O3` and `O7` as unreachable and deletes them.
+        - Surviving objects `O4`, `O5` (now **age = 2**) and `O6` (**age = 1**) are moved to **Survivor Space S1.**
+        - The previous survivor space `S0` is now empty.
+
+-  **Step 5:** More Object Allocation
+    - Objects `O8`, `O9` are created → placed in Eden.
+
+-  **Step 6:** Third GC Run
+    - GC marks `O9` and `O4` for deletion and deletes them.
+    - Moves `O5` (age = 3) and `O8` (age = 1) to **Survivor Space S0.**
+
+- **Step 7:** Promotion to Old Generation
+    - Suppose the **promotion threshold is age 3**.
+    - `O5` has reached age 3, so it is moved to the Old Generation.
+    - Long-lived objects like `O5` are handled by **Major GC**, which runs **less frequently** than Minor GC.
+
+##### Survivor Space Rotation
+**S0 and S1 alternate** during each GC cycle:
+- If `S0` is the current destination, next time `S1` will be the destination.
+- The previous survivor space is always emptied after GC.
+
+
+
+#### Stack Memory
+- Stores method calls, local variables, primitive datatypes and reference variables of the heap object.
+- Each thread has its own stack.
+- Memory is automatically freed once the method execution is complete.
+- Variables within a SCOPE is only visible and as soon as any variable goes out of the SCOPE, it get deleted from the Stack (in LIFO order)
+- When Stack memory goes full it throws `java.lang.StackOverflowError`.
+
+#### Method Area (Metaspace)
+- Stores class-level data, such as:
+    - Method code
+    - Static variables
+    - Constant pool
+- Shared among all threads.
+####  Program Counter (PC) Register
+- Holds the address of the currently executing instruction of each thread.
+- Every thread has its own PC register.
+
+#### Native Method Stack
+- Used for executing native (non-Java) methods, often written in C/C++.
+
+### Garbage Collection
+- Java automatically removes objects that are **no longer referenced** to free up heap space.
+- You don’t need to manually deallocate memory like in C/C++.
+- Garbage Collection happens in the heap memory only, controlled by JVM.
+
+Common GC algorithms:
+- Serial GC (for small applications) 
+    - Only one thread is working to free up space, pausing all other application thread.
+- Parallel GC (multi-threaded GC, default GC from JAVA-8) 
+    - Multiple threads are working to free up space, pausing all other application thread.
+- Concurrent mark and sweep 
+    - Application thread and GC thread will work in parallel but not 100% guaranteed but no memory compaction
+- G1 GC (splits heap into regions, good for large applications)
+    - Application thread and GC thread will work in parallel but not 100% guaranteed together with memory compaction
+
+### References and their impact on GC
+
+In Java, references determine how objects are treated during GC. Java provides several levels of reference strength:
+
+#### Strong Reference (Default)
+- If an object has a strong reference, **GC will never reclaim it.**
+    ```java
+    StringBuilder sb = new StringBuilder("Hello");
+    ```
+    - As long as `sb` is reachable (strong reference exists), object won't be garbage collected.
+
+#### Soft Reference (java.lang.ref.SoftReference)
+- Allows objects to be garbage collected **only when memory is low**.
+- Used for implementing memory-sensitive caches.
+- Example:
+    ```java
+    SoftReference<StringBuilder> softRef = new SoftReference<>(new StringBuilder("Hello"));
+    ```
+    - Object may stay in memory until JVM needs space. when **JVM needs space it's eligible for GC** and is not dependent on `softRef` is reachable or not. 
+
+#### Weak Reference (java.lang.ref.WeakReference)
+- Object is collected **as soon as it’s weakly reachable**, i.e., no strong or soft refs exist.
+- Commonly used in caches (e.g., `WeakHashMap`).
+- Example:
+    ```java
+    WeakReference<StringBuilder> weakRef = new WeakReference<>(new StringBuilder("Hello"));
+    ```
+    - GC can reclaim the object immediately if only weak references exist.
+    - Even though an object referenced **only weakly is eligible for garbage collection**, that doesn't mean it will be collected **immediately** — just that GC is allowed to reclaim it.
+
+#### Phantom Reference (java.lang.ref.PhantomReference)
+- Does not return the object via get().
+- Used to perform cleanup after object is finalized and collected.
+- Must be registered with a ReferenceQueue.
+- Example:
+    ```java
+    PhantomReference<MyObject> phantomRef = new PhantomReference<>(obj, refQueue);
+    ```
+    - Used for **post-mortem cleanup** or resource deallocation.
+
+#### Summary Table:
+| Reference Type | Collected When?                       | Use Case                          |
+| -------------- | ------------------------------------- | --------------------------------- |
+| **Strong**     | Never (as long as reachable)          | General programming               |
+| **Soft**       | Low memory condition                  | Memory-sensitive caching          |
+| **Weak**       | Next GC cycle if no strong refs       | Maps, lightweight caches          |
+| **Phantom**    | After finalization (never accessible) | Post-GC cleanup, resource release |
+
+### Key Concepts
+| Concept               | Description                                                    |
+| --------------------- | -------------------------------------------------------------- |
+| **new keyword**       | Allocates memory from the heap.                                |
+| **null reference**    | Object is eligible for garbage collection.                     |
+| **finalize() method** | Called by GC before reclaiming memory (deprecated in Java 9+). |
+| **System.gc()**       | Suggests JVM to run GC using this line of code(not guaranteed) |
+| **Memory Leak**       | Happens when unused objects are still referenced.              |

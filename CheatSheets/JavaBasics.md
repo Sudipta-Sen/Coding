@@ -88,6 +88,34 @@
 >> iii. [Weak Reference](#weak-reference-javalangrefweakreference)<br>
 >> iv. [Phantom Reference](#phantom-reference-javalangrefphantomreference)<br>
 
+6. [Java Classes](#java-classes)<br>
+> a. [Concrete Class](#concrete-class)<br>
+> b. [Abstract Class](#abstract-class)<br>
+> c. [Object Class](#object-class)<br>
+> d. [Nested Class](#nested-classes)<br>
+>> i. [Inner Class, non-static](#inner-class)<br>
+>>> - [Anonymous Inner Class](#anonymous-inner-class)<br>
+>>> - [Member Inneer Class](#member-inner-class)<br>
+>>> - [Local Inner Class](#local-inner-class)<br>
+
+>> ii. [Static Inner Class](#static-nested-class)<br>
+
+> e. [Generic Class]()<br>
+>> i. [Multiple Type Parameters](#generic-class-with-multiple-type-parameters)<br>
+>> ii. [Bounded Type Parameters](#bounded-type-parameters)<br>
+>> iii. [Generic Class inheritance with interface and class](#generic-class-inheritance-with-interface-and-class)<br>
+>> iv. [Wildcards in Generic](#wildcards-in-generic)<br>
+>>> - [Unknown type unbounded wildcard](#1---unknown-type-unbounded-wildcard)<br>
+>>> - [Upper Bounded Wildcard](#2--extends-t--upper-bounded-wildcard)<br>
+>>> - [Lower Bounded Wildcard](#3--super-t--lower-bounded-wildcard)<br>
+
+> f. [POJO](#pojo-plain-old-java-object)<br>
+> g. [Enum](#enum)<br>
+> h. [Final](#final)<br>
+> i. [Singleton](#singleton)<br>
+> j. [Immutable](#immutable)<br>
+> l. [Wrapper Class](#wrapper-class)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -1720,3 +1748,630 @@ In Java, references determine how objects are treated during GC. Java provides s
 | **finalize() method** | Called by GC before reclaiming memory (deprecated in Java 9+). |
 | **System.gc()**       | Suggests JVM to run GC using this line of code(not guaranteed) |
 | **Memory Leak**       | Happens when unused objects are still referenced.              |
+
+## Java Classes
+
+In Java, everything revolves around **classes** — blueprints used to create **objects**. Java supports multiple types of classes, each serving a different purpose.
+
+### Concrete Class
+
+A concrete class is a regular class that has **complete implementation**. It can be instantiated directly.
+
+```java
+class Animal {
+    void sound() {
+        System.out.println("Animal makes sound");
+    }
+}
+```
+
+### Abstract Class
+An **abstract class** cannot be instantiated. It may have abstract methods (without body) and concrete methods (with body). It's meant to be extended by subclasses which can be another abstract or a concrete class. 
+
+Constructor can be created for abstract class and child classes can access them with super keyword.
+```java
+abstract class Animal {
+    abstract void sound();
+    void sleep() {
+        System.out.println("Sleeping...");
+    }
+}
+```
+
+### Object Class
+
+The `Object` class is the **root of the Java class hierarchy**. Every class in Java **implicitly extends Object.** So every class in java is a subclass of `Object` class.
+
+Common methods from `Object`: `toString()`, `equals()`, `hashCode()`, `clone()`, `notify()`, `wait()`, `getClass`
+
+```java
+class Car {}
+class Bird {}
+
+class Main {
+    public static void main(String[] args) {
+        Object obj1 = new Car();
+        Object obj2 = new Bird();
+        
+        System.out.println(obj1.getClass()); //Output: class Car
+        System.out.println(obj2.getClass()); //Output: class Bird
+    } 
+}
+```
+
+### Nested Classes
+
+A **nested class** is a class defined **within another class**. It helps logically group classes that are only used in one place. 
+
+If we know that a class(A) will be used by only one another class(B), then instead of creating a new file(A.java) for it, we can create nested class inside B class itself.
+
+Its scope is same as of its outer class.
+There are varius types of nested class: 
+
+- Static Nested Class
+- Non Static Nested Class / Inner class
+    - Local Inner class
+    - Member Inner Class
+    - Anonymous Inner Class
+
+#### Inner Class
+
+A non-static class defined **inside another class**. It has access to all members of the outer class.
+
+```java
+class Outer {
+    int instVar=10;
+    static int classVar=20;
+    class Inner {
+        void display() {
+            System.out.println("Inside Inner - "+(instVar+classVar));
+        }
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Outer obj1 = new Outer();
+        Outer.Inner obj2 = obj1.new Inner();
+        obj2.display(); //Output: Inside Inner - 30
+    }
+}
+```
+
+Inheritance for local inner class is possible. 
+```java
+class Outer {
+
+    // Inner (non-static) class
+    class Animal {
+        String type = "Generic Animal";
+
+        void sound() {
+            System.out.println("Animal makes sound");
+        }
+    }
+}
+
+// Subclass of Outer
+class SubOuter extends Outer {
+
+    // Subclass of the inner class Animal
+    class Dog extends Animal {
+
+        void printType() {
+            System.out.println("Type: " + type); // Accessing inherited variable
+        }
+
+        @Override
+        void sound() {
+            System.out.println("Dog barks");
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SubOuter subOuter = new SubOuter(); // Create outer class instance
+        SubOuter.Dog dog = subOuter.new Dog(); // Create inner class instance
+        dog.printType();  // Output: Type: Generic Animal
+        dog.sound();      // Output: Dog barks
+    }
+}
+```
+
+- Inner class `Animal` is non-static, so it is tied to an instance of `Outer`.
+- `Dog` extends `Animal` within a subclass `SubOuter`, which extends `Outer`.
+- To instantiate `Dog`, we need an instance of `SubOuter`.
+
+##### Anonymous Inner Class
+
+A class with **no name**, created to override methods or implement interfaces on the fly — often used in event handling or single-use logic.
+
+```java
+abstract class Animal {
+    abstract void sound();
+}
+
+class Main {
+    public static void main(String[] args) {
+        Animal a = new Animal() {
+            void sound() {
+                System.out.println("Anonymous animal sound");
+            }
+        };
+        a.sound(); // Output: Anonymous animal sound
+    }
+}
+```
+
+What happens behind -- 
+- Subclass is created, name decided by compiler
+- Creates an object of subclass and assign its reference to object `a`.
+
+##### Member Inner Class
+
+An inner class that's defined at class level, similar to a member variable. This is technically same as the general inner class.
+
+```java
+class Outer {
+    class MemberInner {
+        void msg() {
+            System.out.println("Member inner class");
+        }
+    }
+}
+```
+
+##### Local Inner Class
+
+- These are those classes which are defined in any block like for loop, while loop, if condition, method etc.
+- It can not be declared as private, protected, public. Only default (not defined explicit) access modifier is used.
+- It can not be initiated outside of this block.
+- We know that when we create a method in java we get a block in Stack. As soon as the block ends, the memory got freed up, thats why the class can only be invoked inside the block.
+
+
+```java
+class Outer {
+
+    int instVar=10;
+    static int classVar=20;
+
+    void show() {
+
+        int methodlocalVar=40;
+
+        class LocalInner {
+            int localInnerVar=10;
+            void msg() {
+                System.out.println("Inside Local Inner Class - "+(instVar+classVar+methodlocalVar+localInnerVar));
+            }
+        }
+        LocalInner localInnerObj = new LocalInner();
+        localInnerObj.msg();
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Outer obj1 = new Outer();
+        obj1.show(); //Output: Inside Local Inner Class - 80
+    }
+}
+```
+
+#### Static Nested Class
+
+A **static nested class** cannot access non-static members of the outer class without an object. Useful for grouping helper classes.
+
+Static Nested Class can have different access modifier than the outter class.
+
+```java
+class Outer {
+    static class StaticInner {
+        void msg() {
+            System.out.println("Static Inner Class");
+        }
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Outer.StaticInner obj = new Outer.StaticInner();
+        obj.msg(); //Output: Static Inner Class
+    }
+}
+```
+
+Inheritance of Static Nested Class is possible
+```java
+class Outer {
+
+    // Static nested class
+    static class Animal {
+        String type = "Generic Animal";
+
+        void sound() {
+            System.out.println("Animal makes sound");
+        }
+    }
+}
+
+// Subclass extending the static nested class
+class Dog extends Outer.Animal {
+
+    void printType() {
+        // Accessing inherited variable
+        System.out.println("Type: " + type);
+    }
+
+    @Override
+    void sound() {
+        System.out.println("Dog barks");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Dog d = new Dog();
+        d.printType();  // Output: Type: Generic Animal
+    }
+}
+```
+
+### Generic
+
+- A **Generic class** in Java allows you to define a class with a type parameter (or multiple parameters). It enables **type-safe code** and avoids the need for casting when retrieving data from objects like collections.
+- Generic don't work with primitive types.
+- Why Use Generics?
+    - Ensures compile-time type safety and reduces ClassCastException.
+    - Eliminates type casting
+    - Enables classes, interfaces, and methods to operate on typed parameters.
+- Syntax:
+    ```java
+    class ClassName<T> {
+        T data;
+
+        ClassName(T data) {
+            this.data = data;
+        }
+
+        T getData() {
+            return data;
+        }
+    }
+    ```
+    Here, `T` is a **type parameter** that will be replaced with a real type when the object is created.
+
+- Example: Generic Box Class
+    ```java
+    // Define a generic class
+    class Box<T> {
+        private T item;
+
+        public void setItem(T item) {
+            this.item = item;
+        }
+
+        public T getItem() {
+            return item;
+        }
+    }
+
+    // Use the generic class
+    public class Main {
+        public static void main(String[] args) {
+            Box<String> stringBox = new Box<>();
+            stringBox.setItem("Hello Generics");
+            System.out.println(stringBox.getItem()); // Output: Hello Generics
+
+            Box<Integer> intBox = new Box<>();
+            intBox.setItem(123);
+            System.out.println(intBox.getItem()); // Output: 123
+        }
+    }
+    ```
+
+#### Generic Class with multiple Type Parameters
+```java
+class Triplet<T, U, V> {
+    private T first;
+    private U second;
+    private V third;
+
+    public Triplet(T first, U second, V third) {
+        this.first = first;
+        this.second = second;
+        this.third = third;
+    }
+
+    public T getFirst() {
+        return first;
+    }
+
+    public U getSecond() {
+        return second;
+    }
+
+    public V getThird() {
+        return third;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Triplet<String, Integer, Double> data = new Triplet<>("Age", 30, 98.6);
+
+        System.out.println(data.getFirst());   // Output: Age
+        System.out.println(data.getSecond());  // Output: 30
+        System.out.println(data.getThird());   // Output: 98.6
+    }
+}
+```
+
+#### Bounded Type Parameters
+    
+We can restrict the types that can be used as type arguments using **bounded type parameters**.
+
+```java
+class NumberBox<T extends Number> {
+    private T number;
+
+    public NumberBox(T number) {
+        this.number = number;
+    }
+
+    public double doubleValue() {
+        return number.doubleValue();
+    }
+}
+
+NumberBox<Integer> intBox = new NumberBox<>(10);
+System.out.println(intBox.doubleValue());  // Output: 10.0
+
+NumberBox<Float> floatBox = new NumberBox<>(5.5f);
+System.out.println(floatBox.doubleValue()); // Output: 5.5
+```
+- Now, only `Integer`, `Double`, `Float`, etc. can be passed to `NumberBox<T>`.
+
+#### Generic Class inheritance with interface and class 
+
+- We cannot extend more than one class (because Java does not support multiple inheritance with classes), but we can implement multiple interfaces and extend one class.
+
+Here’s an example of a generic class in Java that:
+- Extends one class
+- Implements two interfaces
+- Syntax
+    ```java
+    class MyClass<T extends SomeClass & Interface1 & Interface2> {
+        // class body
+    }
+    ```
+- Example:
+    ```java
+    class Animal {
+        void makeSound() {
+            System.out.println("Animal sound");
+        }
+    }
+
+    // Interface
+    interface Eater { void eat(); }
+    interface Sleeper { void sleep(); }
+
+    // A concrete class that satisfies the bounds
+    class Lion extends Animal implements Eater, Sleeper {
+        public void eat() {
+            System.out.println("Lion eats meat");
+        }
+
+        public void sleep() {
+            System.out.println("Lion sleeps in the shade");
+        }
+    }
+
+    // Generic class with bounded type parameter
+    class Zoo<T extends Animal & Eater & Sleeper> {
+        private T animal;
+
+        public Zoo(T animal) {
+            this.animal = animal;
+        }
+
+        public void showAnimalBehavior() {
+            animal.makeSound();
+            animal.eat();
+            animal.sleep();
+        }
+    }
+
+    public class Main {
+        public static void main(String[] args) {
+            Lion lion = new Lion();
+            Zoo<Lion> lionZoo = new Zoo<>(lion);
+            lionZoo.showAnimalBehavior();
+            /*Output:
+            Animal sound
+            Lion eats meat
+            Lion sleeps in the shade
+            */
+        }
+    }
+    ```
+#### Wildcards in Generic
+
+There are three type of wild cards -- 
+- <?> : Unknown type
+- < ? extends T > : Upper bounded wildcard (subclasses of T)
+- < ? super T > : Lower bounded wildcard (superclasses of T)
+
+##### 1. `<?>` — Unknown Type (Unbounded Wildcard)
+
+- **Problem:**
+    We have a method like:
+    ```java
+    void process(List<Object> list) {
+        // ...
+    }
+    ```
+
+    But when you try to call it with `List<Integer>`, like this:
+    ```java
+    List<Integer> intList = Arrays.asList(1, 2, 3);
+    process(intList); // ❌ Compilation error
+    ```
+
+    It doesn't compile because Java generics are invariant.
+    - `List<Integer>` is not a subtype of `List<Object>`, even though `Integer` is a subtype of `Object`.
+    - Invariance means: `List<X>` is only compatible with `List<X>` — not `List<Y>` even if `Y` is a superclass/subclass of `X`.
+    - If Java allowed this, it could break type safety:
+        ```java
+        void process(List<Object> list) {
+            list.add("Hello");  // legal for List<Object>
+        }
+
+        List<Integer> intList = new ArrayList<>();
+        process(intList);  // If allowed...
+        Integer i = intList.get(0); // ClassCastException at runtime!
+        ```
+
+- **Solution: Use Wildcard** `<?>`
+
+    We can declare the method like this:
+    ```java
+    void process(List<?> list) {
+        for (Object obj : list) {
+            System.out.println(obj);
+        }
+    }
+    ```
+
+    And now you can pass a `List<Integer>`, `List<String>`, etc.
+    ```java
+    process(Arrays.asList(1, 2, 3)); // Works!
+    process(Arrays.asList("a", "b", "c")); // Also works!
+    ```
+
+    Why `List<?>` works
+    - `List<?>` means "a list of some unknown type".
+    - It could be a `List<Integer>`, `List<String>`, `List<Object>`, etc.
+    - We **cannot add elements** to a `List<?>`(except `null`), but **we can read elements safely as** `Object`.
+
+##### 2. `<? extends T>` — Upper Bounded Wildcard
+
+- Means any class that **extends T or is T itself** (subtypes of T).
+- It is **read-only** — we can’t safely add elements to such a list (except null), because the exact type is unknown.
+- Use it when we want to read from a structure and know the values will be at least of type `T`
+- Example:
+    ```java
+    public static void processNumbers(List<? extends Number> list) {
+        for (Number num : list) {
+            System.out.println(num.doubleValue());
+        }
+    }
+
+    List<Integer> intList = List.of(1, 2, 3);
+    List<Double> doubleList = List.of(1.1, 2.2);
+
+    processNumbers(intList);     // Allowed
+    processNumbers(doubleList);  // Allowed
+    ```
+
+##### 3. `<? super T>` — Lower Bounded Wildcard
+
+- Means any class that is a **superclass of T or T itself**.
+- You can **write items** of type `T` or its subclasses, but **reading gives** only `Object`
+- Use it when we want to **add** elements to a structure, and we know they are at least of type `T`.
+- **Example:**
+    ```java
+    public static void addIntegers(List<? super Integer> list) {
+        list.add(10);
+        list.add(20);
+        // list.add("String"); // Not allowed
+    }
+
+    List<Number> numberList = new ArrayList<>();
+    addIntegers(numberList);  // Allowed
+
+    List<Object> objectList = new ArrayList<>();
+    addIntegers(objectList);  // Also allowed
+    ```
+
+    But you can't safely do:
+
+    ```java
+    Integer i = list.get(0);  // ❌ Not allowed
+    Object obj = list.get(0); // ✅ Only Object is guaranteed
+    ```
+🧠 Summary Table:
+
+| Wildcard Type   | Can Add?         | Can Read?   | When to Use                |
+| --------------- | ---------------- | ----------- | -------------------------- |
+| `<?>`           | ❌ (only `null`)  | ✅ as Object | Read-only, any type        |
+| `<? extends T>` | ❌                | ✅ as T      | Read from T or its subtype |
+| `<? super T>`   | ✅ (T or subtype) | ✅ as Object | Write T, read as Object    |
+
+
+### POJO (Plain Old Java Object)
+- A simple Java object without any restriction, not bound by any special rules other than Java conventions.
+- Characteristics:
+    - Private fields
+    - Public getters/setters
+    - No-argument constructor
+    - No business logic
+- Example:
+    ```java
+    public class Student {
+        private String name;
+        private int age;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+
+        public int getAge() { return age; }
+        public void setAge(int age) { this.age = age; }
+    }
+    ```
+
+### Enum
+- A special data type that enables a variable to be a set of predefined constants.
+- Example:
+    ```java
+    public enum Day { MONDAY, TUESDAY, WEDNESDAY }
+    ```
+
+### Final
+
+### Singleton
+- Design pattern that ensures only one instance of a class exists during runtime.
+- Example (Thread-safe lazy initialization):
+    ```java
+    public class Singleton {
+        private static Singleton instance;
+
+        private Singleton() {}
+
+        public static synchronized Singleton getInstance() {
+            if (instance == null) {
+                instance = new Singleton();
+            }
+            return instance;
+        }
+    }
+    ```
+### Immutable
+- An object whose state cannot be modified after creation.
+- `String` class is immutable.
+- To create an immutable class:
+    - Make class `final`
+    - Make fields `private final`
+    - No setters
+    - Initialize through constructor
+
+### Wrapper Class
+- Provides object representation for primitive data types.
+- Example:
+    - `int` → `Integer`
+    - `double` → `Double`
+- Use case:
+    - Collections (like `List<Integer>`)
+    - Autoboxing and unboxing

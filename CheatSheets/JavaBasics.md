@@ -2315,9 +2315,10 @@ There are three type of wild cards --
 - A simple Java object without any restriction, not bound by any special rules other than Java conventions.
 - Characteristics:
     - Private fields
-    - Public getters/setters
-    - No-argument constructor
+    - Public getters/setters and public class
+    - No-argument constructor only public default constructor
     - No business logic
+    - It should not extend any class or implement any interface
 - Example:
     ```java
     public class Student {
@@ -2333,14 +2334,243 @@ There are three type of wild cards --
     ```
 
 ### Enum
-- A special data type that enables a variable to be a set of predefined constants.
-- Example:
+- A special data type that enables a variable to be a set of predefined constants (variables whose values can not be changed)
+- We can define a constant using static and final keyword but here it is constants implicitly, no need to declare again. 
+
+    Example:
     ```java
-    public enum Day { MONDAY, TUESDAY, WEDNESDAY }
+    public enum Day { MONDAY, TUESDAY, WEDNESDAY; }
     ```
+    - In Java, when you define enum constants, each constant is implicitly assigned an ordinal value starting from 0. For the above example, the ordinals are:
+        - `MONDAY` → 0
+        - `TUESDAY` → 1
+        - `WEDNESDAY` → 2
+    
+        These ordinal values can be accessed using the `.ordinal()` method.
+
+-  Example using your `Day` enum to demonstrate the four commonly used methods: 
+    - `values()` - static methods, returns an array of enum object
+    - `valueOf()` - static methods, given a string returns a `enum object` if found otherwise throws `java.lang.IllegalArgumentException`
+    - `ordinal()` - Instance method, returns the ordinal number
+    - `name()` - Instance method
+    ```java
+    public class EnumDemo {
+        public static void main(String[] args) {
+
+            // 1. values(): returns an array of all enum constants
+            System.out.println("All days with ordinal:");
+            for (Day day : Day.values()) {
+                System.out.println(day + " -- " + day.ordinal());
+            }
+
+            /* Output:
+                All days with ordinal:
+                MONDAY -- 0  
+                TUESDAY -- 1  
+                WEDNESDAY -- 2
+            */
+
+            // 2. ordinal(): returns the position/index (starting from 0)
+            Day today = Day.TUESDAY;
+            System.out.println("\nOrdinal of " + today + ": " + today.ordinal()); 
+            // Output: Ordinal of TUESDAY: 1
+
+            // 3. valueOf(): returns the enum constant with given name (case-sensitive)
+            String dayName = "MONDAY";
+            Day dayFromName = Day.valueOf(dayName);
+            System.out.println("\nDay from name \"" + dayName + "\": " + dayFromName); 
+            // Output: Day from name "MONDAY": MONDAY
+
+            // 4. name(): returns the name of the enum constant as a string
+            System.out.println("\nUsing name(): " + today.name()); 
+            //Output: Using name(): TUESDAY
+        }
+    }
+    ```
+- Enum can have variables, constructor, methods.
+- Enum can have custom values and static lookup.
+    ```java
+    public enum Status {
+        SUCCESS(200, "Operation was successful"),
+        ERROR(500, "Internal server error"),
+        NOT_FOUND(404, "Resource not found");
+
+        private final int code; 
+        private final String description;
+        // public, protected are legal, but bad practice, we might access Status.SUCCESS.code directly
+
+        // Constructor
+        Status(int code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        // Getters
+        public int getCode() {
+            return code;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        // Static method to get enum by code
+        public static Status getByCode(int code) {
+            for (Status status : Status.values()) {
+                if (status.getCode() == code) {
+                    return status;
+                }
+            }
+            throw new IllegalArgumentException("No status found for code: " + code);
+        }
+    }
+
+    public class EnumExample {
+        public static void main(String[] args) {
+            Status s = Status.SUCCESS;
+            System.out.println(s + " - " + s.getCode() + " - " + s.getDescription());
+            //Output: SUCCESS - 200 - Operation was successful
+
+            // Get enum from code using static method
+            Status status = Status.getByCode(404);
+            System.out.println("Fetched by code 404: " + status + " - " + status.getDescription());
+            //Output: Fetched by code 404: NOT_FOUND - Resource not found
+        }
+    }
+    ```
+    - Here the variables `code` and `description` are assosiated with **each constant**, same for `getCode()` and `getDescription()` method but `getByCode(int code)` method is assosiated with whole enum class `Status`.
+- Enum can not extend any class, but why? We are telling it enum class then why it can't extend any other class? Because it internally extends `java.lang.Enum` class.
+- Enum can implement interfaces.
+    ```java
+    interface Operation {
+        double apply(double a, double b);
+        String description();
+    }
+
+    enum BasicOperation implements Operation {
+        ADD {
+            @Override
+            public double apply(double a, double b) {
+                return a + b;
+            }
+        },
+        SUBTRACT {
+            @Override
+            public double apply(double a, double b) {
+                return a - b;
+            }
+
+            // This constant overrides both methods (optional)
+            @Override
+            public String description() {
+                return "Performs multiplication";
+            }
+        },
+        MULTIPLY {
+            @Override
+            public double apply(double a, double b) {
+                return a * b;
+            }
+        };
+
+        // Shared implementation for description() (used unless constant overrides it)
+        @Override
+        public String description() {
+            return "Default: Performs a math operation";
+        }
+    }
+
+    public class Main {
+        public static void main(String[] args) {
+            double x = 12, y = 4;
+
+            for (BasicOperation op : BasicOperation.values()) {
+                System.out.println(op.name() + ": " + op.apply(x, y));
+                System.out.println("Description: " + op.description());
+                System.out.println("---");
+            }
+
+            /* Output
+            ADD: 16.0
+            Description: Default: Performs a math operation
+            ---
+            SUBTRACT: 8.0
+            Description: Performs multiplication
+            ---
+            MULTIPLY: 48.0
+            Description: Default: Performs a math operation
+            ---
+            */
+        }
+    }
+    ```
+    - So when an enum implements an interface with abstract methods, there are two ways to provide implementations:
+        - Per-constant implementation – Each enum constant can override the method individually with its own behavior.
+        - Shared implementation – The enum itself can provide a single common implementation for all constants.
+        
+        Additionally, even when a shared implementation is defined, specific constants can still override that method if they require custom behavior.
+- Enum can not be initiated (as its constructor will be private only, even we give default, in bytecode it make it private)  
+- Enum can have abstract method, and all the constant should implement that abstract method.
+    
+    Example:
+    ```java
+    enum Operation {
+        ADD {
+            @Override
+            public double apply(double x, double y) {
+                return x + y;
+            }
+        },
+        SUBTRACT {
+            @Override
+            public double apply(double x, double y) {
+                return x - y;
+            }
+        },
+        MULTIPLY {
+            @Override
+            public double apply(double x, double y) {
+                return x * y;
+            }
+        },
+        DIVIDE {
+            @Override
+            public double apply(double x, double y) {
+                if (y == 0) throw new ArithmeticException("Cannot divide by zero");
+                return x / y;
+            }
+        };
+
+        // Abstract method to be implemented by each constant
+        public abstract double apply(double x, double y);
+    }
+    public class Calculator {
+        public static void main(String[] args) {
+            double a = 10, b = 5;
+
+            for (Operation op : Operation.values()) {
+                System.out.println(op.name() + ": " + op.apply(a, b));
+            }
+            /*
+            Output:
+            ADD: 15.0
+            SUBTRACT: 5.0
+            MULTIPLY: 50.0
+            DIVIDE: 2.0
+            */
+        }
+    }
+    ```
+    - `op.name()` is a method call that returns the **name of the enum constant as a** `String`.
+    - Similar to this example enum constant can also override any non-abstract method also.
 
 ### Final
 
+- final class can't be inherited
+    ```java
+    public final class TestClass {}
+    public class AnotherClass extends TestClass {} // Compilation error
+    ```
 ### Singleton
 - Design pattern that ensures only one instance of a class exists during runtime.
 - Example (Thread-safe lazy initialization):

@@ -113,6 +113,12 @@
 > g. [Enum](#enum)<br>
 > h. [Final](#final)<br>
 > i. [Singleton](#singleton)<br>
+>> i. [Eager Initialization](#1-eager-initialization)<br>
+>> ii. [Lazy Initialization](#2-lazy-initialization)<br>
+>> iii. [Synchronization Block](#3-synchronization-block)<br>
+>> iv. [Double Check Lock](#4-double-check-lock)<br>
+>> v. [Bill Pugh Solution](#5-bill-pugh-solution)<br>
+
 > j. [Immutable](#immutable)<br>
 > l. [Wrapper Class](#wrapper-class)<br>
 
@@ -2572,30 +2578,312 @@ There are three type of wild cards --
     public class AnotherClass extends TestClass {} // Compilation error
     ```
 ### Singleton
-- Design pattern that ensures only one instance of a class exists during runtime.
-- Example (Thread-safe lazy initialization):
+- Singleton design pattern that ensures only one instance of a class exists during runtime. Ex DBConnection class. We want to create only one DBConnection and perform all actions, not like one connection per operation.
+
+- Different ways of creating singleton class
+    - Eager Initialization
+    - Lazy Initialization
+    - Synchronization Block
+    - Double Check Lock
+    - Bill Pugh Solution
+    - Enum Singleton
+
+#### 1. Eager Initialization
+
+Eager Initialization is one of the simplest ways to implement the Singleton class/design pattern. In this approach, the singleton instance is created **at the time of class loading**, **even if it's not used**.
+
+This is thread-safe since instance is created when class is loaded (class loading is thread-safe in Java).
+
+- Example:
     ```java
-    public class Singleton {
-        private static Singleton instance;
+    public class DBConnection {
 
-        private Singleton() {}
+        // Step 1: Create the instance at class loading time
+        private static final DBConnection instance = new DBConnection();
 
-        public static synchronized Singleton getInstance() {
-            if (instance == null) {
-                instance = new Singleton();
-            }
+        // Step 2: Private constructor to prevent external instantiation
+        private DBConnection() {
+            System.out.println("DBConnection instance created");
+            // We can add actual DB initialization here
+        }
+
+        // Step 3: Public method to access the instance
+        public static DBConnection getInstance() {
             return instance;
+        }
+
+        // Sample method
+        public void connect() {
+            System.out.println("Connected to DB");
         }
     }
     ```
+- Disadvantage:
+    - The object is **created whether it is needed or not**. So resource wastage if the instance is never used
+    - If the singleton manages **heavy resources** (like database connections, file readers, sockets), this can cause **unnecessary memory usage or delay during application startup**.
+    - Even though `getInstance()` is never called, the `DBConnection` constructor will run if the class is loaded, wasting resources.
+
+#### 2. Lazy Initialization
+
+Lazy Initialization means the singleton instance is **not created at class loading**, but **only when it is first requested** (i.e., when `getInstance()` is called).
+
+This approach solves the **resource-wastage problem of eager initialization**, especially when the singleton object is **heavy** (e.g., a DB connection) and might **not be needed in all runs.**
+
+```java
+class DBConnection {
+
+    // Step 1: Declare instance, but don't create it yet
+    private static DBConnection instance;
+
+    // Step 2: Private constructor to prevent outside instantiation
+    private DBConnection() {
+        instance = null;
+        System.out.println("DBConnection instance created");
+        // Simulate expensive DB setup
+    }
+
+    // Step 3: Create instance only when requested
+    public static DBConnection getInstance() {
+        if (instance == null) {
+            instance = new DBConnection();  // Lazy initialization
+        }
+        return instance;
+    }
+
+    public void connect() {
+        System.out.println("Connected to DB");
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("App started...");
+
+        // DBConnection is not created yet
+
+        // Now we access it
+        DBConnection db = DBConnection.getInstance();
+        db.connect();
+    }
+}
+```
+- Disadvantages:
+    - Not Thread-Safe (By Default)
+        - Two threads accessing `getInstance()` simultaneously can create multiple instances as both of them finds `instance == null` to be true violating the singleton guarantee.
+    
+#### 3. Synchronization Block
+
+When using **lazy initialization** in Singleton, a common problem is thread safety — multiple threads can create separate instances if not synchronized properly.
+
+To solve this, we use a **synchronized block**
+
+```java
+class DBConnection {
+
+    private static DBConnection instance;
+
+    private DBConnection() {
+        instance = null;
+        System.out.println("DBConnection instance created");
+    }
+
+    synchronized public static DBConnection getInstance() {
+        if (instance == null) {
+            instance = new DBConnection(); 
+        }
+        return instance;
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("App started...");
+
+        DBConnection db = DBConnection.getInstance();
+    }
+}
+```
+- It introduces a performance bottleneck. Even **after the instance is created**, every call to `DBConnection.getInstance()` must acquire the lock, even though it's just returning the **already-created object**.
+
+- This means:
+    - All threads must wait **one after another** to enter the method (sequentially).
+    - **It defeats the purpose of concurrency**, especially when the object is already initialized.
+    - **This makes it slower** under high load, where multiple threads frequently access `getInstance()`.
+
+#### 4. Double Check Lock
+
+To solve the above issue, we use a **synchronized block**, often with **double-checked locking** to improve performance.
+
+```java
+class DBConnection {
+    private static DBConnection instance;
+
+    private DBConnection() {
+        // private constructor
+    }
+
+    public static DBConnection getInstance() {
+        if (instance == null) { // First check (no locking)
+            synchronized (DBConnection.class) {
+                if (instance == null) { // Second check (with locking)
+                    instance = new DBConnection();
+                }
+            }
+        }
+        return instance;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("App started...");
+
+        DBConnection db = DBConnection.getInstance();
+    }
+}
+```
+- First `if (instance == null)` helps **avoid unnecessary synchronization** once the instance is created. It ensures that **locking only occurs during the first access**, improving performance for all subsequent calls to `getInstance()`.
+- Second `if (instance == null)` ensures only one instance is created if multiple threads entered the first check simultaneously. This is called **Double-Checked Locking.**
+- **Problem:** Object Partially Constructed Due to Caching
+
+    Object creation (`instance = new DBConnection()`) is **not atomic**. It involves three steps under the hood:
+    1. Allocate memory for the object.
+    2. Initialize the object.
+    3. Assign the object reference to the variable (`instance`).
+
+    Due to **instruction reordering** by the compiler or CPU for performance reasons, **step 3 can occur before step 2**.
+
+    That means:
+    - A thread could assign the reference (`instance`) before the object is fully initialized.
+    - **Another thread can see a non-null reference to a partially constructed object and use it** — leading to **unpredictable behavior or bugs**.
+
+- **Solution:** Use volatile to Prevent Caching & Reordering
+    ```java
+    private static volatile DBConnection instance;
+    ```
+    The `volatile` keyword ensures:
+    - **Visibility:** Changes to `instance` by one thread are visible to others.
+    - **Prevents instruction reordering:** It ensures that **object construction steps happen in order** — memory allocation, initialization, then assignment.
+
+    Now, no thread will see a reference to an incompletely constructed object. By putting `volatile` and checking same variables multiple times makes the program little slow.
+
+#### 5. Bill Pugh Solution
+All the challenges with Singleton arise primarily from one key issue: **the instance is created even if it's never used**. This leads to **unnecessary resource consumption and wasted memory**, especially in scenarios where the object is expensive to create but might not be needed during the application's lifetime.
+
+The Bill Pugh Singleton Pattern is one of the most efficient and recommended ways to implement the Singleton design pattern in Java. It is both **lazy-loaded** and **thread-safe** without requiring synchronization overhead.
+
+```java
+class DBConnection {
+
+    // Private constructor to prevent instantiation
+    private DBConnection() {
+        System.out.println("DBConnection created");
+    }
+
+    // Static inner class - loaded only when getInstance() is called
+    private static class DBConnectionHolder {
+        private static final DBConnection INSTANCE = new DBConnection();
+    }
+
+    // Global access point
+    public static DBConnection getInstance() {
+        return DBConnectionHolder.INSTANCE;
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        DBConnection dBConnection = DBConnection.getInstance();
+    }
+}
+```
+**How it Works:**
+
+It uses a static inner helper class to hold the singleton instance.
+- The singleton instance is **not created** until the **inner class is loaded**.
+- The inner class is **not loaded** until it's **referenced** (i.e., when `getInstance()` is called).
+- Class loading in Java is **thread-safe**, as per the Java Language Specification.
+
+#### 6. Singleton with enum
+
+In an `enum`-based Singleton, we **don’t need to manually initialize the instance** — **Java takes care of that automatically** when the enum constant (`INSTANCE`) is referenced **for the first time**.
+
+```java
+enum DBConnection {
+    INSTANCE;
+
+    private String dbUrl;
+
+    // Constructor (called only once by JVM)
+    DBConnection() {
+        System.out.println("Initializing DB connection...");
+        this.dbUrl = "jdbc:mysql://localhost:3306/mydb";
+        // We can also initialize real DB connection here
+    }
+
+    public void connect() {
+        System.out.println("Connecting to DB at: " + dbUrl);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        DBConnection.INSTANCE.connect();
+    }
+}
+```
+- Enum constructors are **implicitly private** — we cannot call them directly.
+- JVM calls the **constructor exactly once,** ensuring **singleton** behavior.
+- Any field initialization or setup logic goes inside the enum constructor or as field initializers.
+
 ### Immutable
 - An object whose state cannot be modified after creation.
-- `String` class is immutable.
+- `String` class, Wrapper Classes is immutable.
 - To create an immutable class:
-    - Make class `final`
-    - Make fields `private final`
-    - No setters
-    - Initialize through constructor
+    - Make class `final` so that it can not extended.
+    - Make fields `private final`, so that direct access can be prevented and **initiated only once using constructor**
+    - No setters method, generally used to change the value.
+    -  Only getter methods to return copy of the member variable.
+
+```java
+final class Student {
+
+    private final String name;
+    private final List<String> subjects;
+
+    // Constructor makes a deep copy of the list
+    public Student(String name, List<String> subjects) {
+        this.name = name;
+        this.subjects = new ArrayList<>(subjects);  // defensive copy
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    // Getter returns a deep copy to preserve immutability
+    public List<String> getSubjects() {
+        return new ArrayList<>(subjects);  // defensive copy
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        List<String> originalSubjects = Arrays.asList("Math", "Science");
+        Student student = new Student("Alice", originalSubjects);
+
+        System.out.println(student.getSubjects()); // [Math, Science]
+
+        // Attempt to modify the returned list (won't affect internal state)
+        List<String> subjectsFromGetter = student.getSubjects();
+        subjectsFromGetter.add("English");
+
+        System.out.println(subjectsFromGetter);         // [Math, Science, English]
+        System.out.println(student.getSubjects());      // [Math, Science] - original remains unchanged
+    }
+}
+```
+- **Key Points:**
+    - This approach ensures that **external callers cannot modify** the internal list.
+    - A new `ArrayList` is returned every time `getSubjects()` is called.
+    - It’s the safest pattern when your class has **mutable fields like lists or maps.**
 
 ### Wrapper Class
 - Provides object representation for primitive data types.

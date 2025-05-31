@@ -122,6 +122,27 @@
 > j. [Immutable](#immutable)<br>
 > l. [Wrapper Class](#wrapper-class)<br>
 
+
+7. [Java Interfaces](#java-interfaces)<br>
+> a. [Nested Interfaces](#nested-interfaces)<br>
+>> i. [Interface Inside a Class](#interface-inside-a-class)<br>
+>> ii. [Interface Inside an interface](#interface-inside-an-interface)<br>
+
+> b. [Default Method](#default-method)<br>
+>>> - [Class implements multiple interfaces having same default method](#problem-what-happens-when-a-class-implements-multiple-interfaces-having-same-default-method)<br>
+>>> - [Overriding and Inheriting Default Methods](#overriding-and-inheriting-default-methods)<br>
+
+
+> c. [Static methods](#static-methods-1)<br>
+> d. [Private and Private Static](#private-and-private-static)<br>
+
+8. [Functional interface and lambda expression](#functional-interface-and-lambda-expression)<br>
+> a. [Functional Interface](#functional-interface)<br>
+> b. [Implementing Functional Interface](#implementing-functional-interface)<br>
+>> i. [Class with implement keyword](#1-using-a-class-with-implements-keyword)<br>
+>> ii. [Anonymous Inner Class](#anonymous-inner-class)<br>
+>> iii. [Lambda expressions](#3-using-lambda-expressions-java-8)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -2893,3 +2914,437 @@ public class Main {
 - Use case:
     - Collections (like `List<Integer>`)
     - Autoboxing and unboxing
+
+## Java Interfaces
+
+An interface in Java is a reference type, similar to a class, that can contain:
+- abstract methods (without body)
+- default methods (with body)
+- static methods
+- Interface can only be **public** or **default** (**protected** and **private** are not allowed)
+- interface can extend any number of other interfaces (but not class)
+- All nethods are implicitly **public**
+    - private methods are allowed since Java 9, for internal use
+- Methods can not be declared as **final**
+- Variables are public, static and final implicitly (i.e **CONSTANTS**)
+    - We can not make it private or protected
+- Overriding method can not have more restrict access specifiers.
+### Why we interface
+
+1. **Abstraction:**
+
+    Using interface, we can achieve full abstraction i.e we can define WHAT class must do but not HOW.
+    ```java
+    interface Bird {
+        public void fly(); //Every bird must fly but how will it fly it depends on child class
+    }
+    ```
+
+2. **Polymorphism:**
+
+    Interface provides run time polymorphism, checks OOPS discussion.
+
+3. **Multiple Inheritance:**
+    
+    Java supports multiple inheritance from interface not from class.
+
+### Nested Interfaces
+
+A **nested interface** is an interface defined **inside another class or interface**.
+
+There are two types of nested interfaces:
+- Interface inside a class
+- Interface inside an interface
+
+#### Interface Inside a Class
+
+- These interfaces can be `public`, `private`, or `protected`.
+- Accessed using `OuterClassName.InterfaceName`
+- Syntax:
+    ```java
+    class OuterClass {
+        interface NestedInterface {
+            void display();
+        }
+    }
+    ```
+    Implement:
+    ```java
+    class Implementation implements OuterClass.NestedInterface {
+        public void display() {
+            System.out.println("Nested interface inside class implemented.");
+        }
+    }
+    ```
+#### Interface Inside an Interface
+- Nested interfaces inside another interface are implicitly public and static. So no need to create an instance of the outer interface.
+- When we implement outer interface, inner interface implementation is not required and vice versa.
+- Syntax:
+    ```java
+    interface OuterInterface {
+        void show();
+
+        interface NestedInterface {
+            void great();
+        }
+    }
+    ```
+    Implement:
+    ```java
+    class Impl1 implements OuterInterface {
+        public void show() {
+            System.out.println("Outer interface method.");
+        }
+    }
+
+    class Impl2 implements OuterInterface.NestedInterface {
+        public void great() {
+            System.out.println("Nested interface inside interface implemented.");
+        }
+    }
+
+    class Impl3 implements OuterInterface, OuterInterface.NestedInterface {
+
+        public void show() {
+            System.out.println("Implementation-3, Outer interface");
+        }
+
+        public void great() {
+            System.out.println("Implementation-3, Nested interface");
+        }
+    }
+
+    public class Main {
+        public static void main(String[] args) {
+            OuterInterface obj1 = new Impl1();
+            obj1.show(); // Output: Outer interface method.
+
+            OuterInterface.NestedInterface obj2 = new Impl2();
+            obj2.great(); // Output: Nested interface inside interface implemented.
+
+            Impl3 obj3 = new Impl3();
+            obj3.great(); // Output: Implementation-3, Nested interface
+            obj3.show(); // Output: Implementation-3, Outer interface
+        }
+    }
+    ```
+### Default Method
+
+Introduced in **Java 8, a default method** in an interface allows us to provide a method implementation inside the interface itself.
+
+- Example:
+    ```java
+    public interface MyInterface {
+        default void sayHello() {
+            System.out.println("Hello from MyInterface");
+        }
+    }
+    ```
+-  Why Default Methods Were Introduced:
+    - Before Java 8, interfaces could only declare **abstract methods** (i.e., no body).
+    - Adding a new method to an interface would force all implementing classes to implement it — breaking backward compatibility.
+    - With **default methods**, we can add new methods with implementation in an interface without affecting the implementing classes.
+
+#### Problem: What happens when a class implements multiple interfaces having Same default Method
+
+- Solution:
+
+    If a class **implements multiple interfaces** that **have the same default method signature**, the compiler throws a **compile-time error**, unless the class **overrides** the method. Java cannot decide **which default implementation to inherit**, so it forces the class to resolve the conflict.
+
+    Once we are overriding it, we have complete freedom to:
+    - Call specific interface's `default` method using `InterfaceName.super.methodName()`.
+    - Write our **own custom implementation** (without calling any interface's default method).
+
+    ```java
+    interface InterfaceA {
+        default void greet() {
+            System.out.println("Hello from InterfaceA");
+        }
+    }
+
+    interface InterfaceB {
+        default void greet() {
+            System.out.println("Hello from InterfaceB");
+        }
+    }
+
+    class MyClass1 implements InterfaceA, InterfaceB {
+        @Override
+        public void greet() {
+            // Resolving conflict by choosing one explicitly
+            InterfaceA.super.greet();  // or InterfaceB.super.greet()
+        }
+    }
+
+    class MyClass2 implements InterfaceA, InterfaceB {
+        @Override
+        public void greet() {
+            // Custom logic, ignoring both InterfaceA and InterfaceB default methods
+            System.out.println("Hello from MyClass");
+        }
+    }
+    ```
+
+#### Overriding and Inheriting Default Methods
+
+1. **Inherit the default method as-is**
+    
+    If the child interface doesn't override the method, it inherits it exactly as defined.
+    ```java
+    interface Parent {
+        default void greet() {
+            System.out.println("Hello from Parent");
+        }
+    }
+
+    interface Child extends Parent {
+        // Inherits greet() without changes
+    }
+    ```
+    Any class implementing `Child` will get the default `greet()` from `Parent` unless overridden.
+
+2. **Override the default method with a new default method**
+
+    The child interface can provide a new default implementation of the method.
+
+    ```java
+    interface Child extends Parent {
+        @Override
+        default void greet() {
+            System.out.println("Hello from Child");
+        }
+    }
+    ```
+
+    Also child classes can use `ParentInterface.super.method()` — call super methods of their parents and after that add their own implementation.
+
+    ```java
+    interface Child extends Parent {
+        default void greet() {
+            System.out.println("Hello from child");
+            Parent.super.greet();
+        }
+    }
+
+    class childclass implements Child {}
+
+    class Main {
+        public static void main(String[] args) {
+            childclass ch = new childclass();
+            ch.greet();
+            /* Output:
+                Hello from child
+                Hello from Parent
+            */
+        }
+    }
+    ```
+
+### Static Methods
+
+Since Java 8, interfaces can have `static methods`, which belong to the interface itself (not to the implementing classes). These methods **cannot be overridden and are accessed using the interface name**, not through an instance or implementing class.
+
+These methods are public by default in Java 8.
+
+```java
+interface Utils {
+    static void log(String message) {
+        System.out.println("Log: " + message);
+    }
+}
+
+public class App {
+    public static void main(String[] args) {
+        Utils.log("Hello");  // Correct usage
+        // new App().log("Hello");  ❌ Not allowed
+    }
+}
+```
+
+### Private and private static
+
+Starting with **Java 9**, interfaces were enhanced to support `private` and `private static` methods. This was introduced to improve code reuse and encapsulation within interfaces — especially when working with `default` and `static` methods.
+
+- Why private methods in interfaces?
+
+Before Java 9:
+- You could write `default` and `static` methods in interfaces (since Java 8).
+- But **code duplication was common** between these methods because **no private helper methods** were allowed.
+
+Java 9 fixed this by allowing:
+- `private` instance methods (used inside default methods)
+- `private static` methods (used inside static methods)
+- Private method can not be abstract. Means we have to provide the defination.
+
+```java
+interface Bird {
+    void canFly(); // equivalent to public abstract void canFly();
+    public default void minFlyHight() {
+        staticPublicMethod();
+        privateMethod();
+        privateStaticMethod();
+    }
+
+    static void staticPublicMethod() {
+        privateMethod();
+    }
+
+    private void privateMethod() {
+        System.out.println("I am private method");
+    }
+
+
+    private static void privateStaticMethod() {
+        System.out.println("I am private static method");
+    }
+}
+```
+
+## Functional Interface and Lambda Expression
+
+### Functional Interface
+- A Functional Interface is an interface in Java that contains **exactly one abstract method**. It is also known as SAM interface. (Single Abstract Method)
+
+- Why Functional Interface?
+    - Enables usage of **Lambda Expressions**, which provide a **concise and readable** way to represent functional-style behavior.
+    - Declaration Example:
+        ```java
+        @FunctionalInterface
+        interface MyFunction {
+            int operate(int a, int b); //public abstract will be added autometically
+        }
+        ```
+        `@FunctionalInterface` is optional, but helps catch accidental violations (like adding another abstract method will throw an compilation error).
+
+- It may contain **multiple default and static methods**, but only one abstract method.
+    - Functional Interface can also contains multiple `Object` class methods. Every class in Java implicitly extends `java.lang.Object`. So, when we declare `toString()`, `equals(Object)`, or `hashCode()` in an interface, they are **not considered as abstract methods**, because their implementation already exists in `Object`.
+
+        Hence, such declarations **do not count towards the abstract method count** in the interface, and the interface can still be marked as a **functional interface** if it contains only one non-`Object` abstract method.
+
+        ```java
+        @FunctionalInterface
+        interface Printable {
+            void print(); //non-`Object` abstract method
+
+            // Declaring Object class methods in interface
+            boolean equals(Object obj);      // Allowed
+            int hashCode();                  // Allowed
+            String toString();               // Allowed
+        }
+        ```
+
+        Even though this interface contains 4 method declarations, only `print()` is considered abstract. The other three (`equals`, `hashCode`, `toString`) are considered **already implemented** from `Object`.
+
+
+- Common Built-in Functional Interfaces (in java.util.function):
+
+    | Interface           | Abstract Method     | Description                      |
+    | ------------------- | ------------------- | -------------------------------- |
+    | `Function<T, R>`    | `R apply(T t)`      | Takes input of type T, returns R |
+    | `Predicate<T>`      | `boolean test(T t)` | Returns true/false               |
+    | `Supplier<T>`       | `T get()`           | Provides a value, no input       |
+    | `Consumer<T>`       | `void accept(T t)`  | Takes input, returns nothing     |
+    | `BiFunction<T,U,R>` | `R apply(T, U)`     | Takes two inputs, returns result |
+
+### Implementing Functional Interface
+
+#### 1. Using a Class with implements Keyword
+
+This is the traditional way of implementing interfaces.
+
+```java
+@FunctionalInterface
+interface Greeting {
+    void sayHello();
+}
+
+class EnglishGreeting implements Greeting {
+    @Override
+    public void sayHello() {
+        System.out.println("Hello!");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Greeting greeting = new EnglishGreeting();
+        greeting.sayHello();  // Output: Hello!
+    }
+}
+```
+
+#### 2. Using an Anonymous Inner Class
+
+This approach avoids creating a separate named class. Useful for one-time-use implementations.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Greeting greeting = new Greeting() {
+            @Override
+            public void sayHello() {
+                System.out.println("Hi there!");
+            }
+        };
+        greeting.sayHello();  // Output: Hi there!
+    }
+}
+```
+
+#### 3. Using Lambda Expressions (Java 8+)
+
+This is the most concise and modern way to implement a functional interface.
+
+- Example:
+
+    ```java
+    public class Main {
+        public static void main(String[] args) {
+            Greeting greeting = () -> System.out.println("Hey, how are you?");
+            greeting.sayHello();  // Output: Hey, how are you?
+        }
+    }
+    ```
+- Lambda Expression
+
+    A Lambda Expression is a short block of code which takes in parameters and returns a value. Lambda expressions **can only be used with functional interfaces**.
+    - Syntax
+        ```java
+        (parameters) -> expression
+        ```
+    - `Example`
+        ```java
+        interface Bird {
+            void fly(String Val);
+        }
+        public class main {
+            public static void main(String[] args) {
+                Bird obj = (value) -> {
+                    System.out.println(value + " can fly"); 
+                };
+                obj.fly("eagle"); //Output: eagle can fly
+            }
+        }
+        ```
+        ```java
+        @FunctionalInterface
+        interface MathOperation {
+            int operate(int a, int b);
+        }
+
+        public class LambdaExample {
+            public static void main(String[] args) {
+                MathOperation add = (a, b) -> a + b;
+                MathOperation multiply = (a, b) -> a * b;
+
+                System.out.println(add.operate(10, 5));      // 15
+                System.out.println(multiply.operate(10, 5)); // 50
+            }
+        }
+        ```
+        ```java
+        List<String> names = List.of("Alice", "Bob", "Charlie");
+        names.forEach(name -> System.out.println("Hello " + name));
+        ```
+        Here, `forEach` expects a `Consumer<T>` functional interface, and we provide a lambda `(name -> ...)`.
+    - As in functional interfaces there is only one abstract method there is no need to give the method name. 

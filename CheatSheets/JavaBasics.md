@@ -143,6 +143,26 @@
 >> ii. [Anonymous Inner Class](#anonymous-inner-class)<br>
 >> iii. [Lambda expressions](#3-using-lambda-expressions-java-8)<br>
 
+> c. [Type-of Functional Interface](#type-of-functional-interface)<br>
+>> i [Consumer\<T>](#consumert)<br>
+>> ii. [Supplier\<T>](#suppliert)<br>
+>> iii. [Function\<T,R>](#functiont-r)<br>
+>> iv. [Predicate\<T>](#predicatet)<br>
+
+> d. [Inheritance of functional interfaces](#inheritance-of-functional-interfaces)
+>> i. [Functional interface extending non-functional interface](#functional-interface-extending-non-functional-interface)<br>
+>> ii. [Non-functional Interface extending funtional interface](#non-functional-interface-extending-funtional-interface)<br>
+>> iii. [Functional Interface extending functional-interface](#functional-interface-extending-functional-interface)<br>
+
+9. [Reflection](#reflection)<br>
+> a. [What is class `Class`](#what-is-class-class)<br>
+> b. [How to get the class `Class` object](#how-to-get-the-class-class-object)<br>
+>> i. [Using `forname` method](#using-forname-method)<br>
+>> ii. [Using `.class`](#using-class)<br>
+>> iii. [Using `getClass()` method](#using-getclass-method)<br>
+
+> c. [Perform reflection of a class](#perform-reflection-of-a-class)
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -3312,7 +3332,7 @@ This is the most concise and modern way to implement a functional interface.
         ```java
         (parameters) -> expression
         ```
-    - `Example`
+    - `Example1`
         ```java
         interface Bird {
             void fly(String Val);
@@ -3335,16 +3355,260 @@ This is the most concise and modern way to implement a functional interface.
         public class LambdaExample {
             public static void main(String[] args) {
                 MathOperation add = (a, b) -> a + b;
-                MathOperation multiply = (a, b) -> a * b;
+                /* This is same as -- 
+                    MathOperation add = (a, b) -> {
+                        return a + b;
+                    };
+                */
+               MathOperation multiply = (a, b) -> a * b;
 
                 System.out.println(add.operate(10, 5));      // 15
                 System.out.println(multiply.operate(10, 5)); // 50
             }
         }
         ```
+        - If lambda body contains only a single expression, we can **omit the curly braces** `{}` and the `return` keyword.
+            - ✅ **If the method returns a value**, the result of that single expression is **implicitly returned**.
+            - ❌ **If it doesn’t return anything** (i.e., `void` return type), the expression is just executed.
+    - `Example2`
         ```java
         List<String> names = List.of("Alice", "Bob", "Charlie");
         names.forEach(name -> System.out.println("Hello " + name));
         ```
         Here, `forEach` expects a `Consumer<T>` functional interface, and we provide a lambda `(name -> ...)`.
     - As in functional interfaces there is only one abstract method there is no need to give the method name. 
+
+### Type of Functional Interface
+
+Each of the already implemented interfaces has a single abstract method, enabling use with lambda expressions and method references.
+
+#### Consumer\<T>
+- **Represents:** An operation that takes a single input argument and returns no result.
+- **Abstract Method:** `void accept(T t)`
+- **Example:**
+    ```java
+    import java.util.function.Consumer;
+
+    public class ConsumerExample {
+        public static void main(String[] args) {
+            Consumer<String> printer = name -> System.out.println("Hello, " + name);
+            Consumer<Integer> loggingObj = val -> {
+                if(val>10) {
+                    System.out.println("Logging");
+                }
+            };
+            printer.accept("Sudipta");  // Output: Hello, Sudipta
+            loggingObj.accept(12); // Output: Logging
+        }
+    }
+    ```
+
+#### Supplier\<T>
+- **Represents:** A supplier of results. Takes no input and returns a result.
+- **Abstract Method:** `T get()`
+- **Example:**
+    ```java
+    import java.util.function.Supplier;
+
+    public class SupplierExample {
+        public static void main(String[] args) {
+            Supplier<String> greetSupplier = () -> "Welcome to Sudipta's Github!";
+            /* This is same as -- 
+                Supplier<String> greetSupplier = () -> {
+                    return "Welcome to Sudipta's Github!";
+                }
+            */
+            System.out.println(greetSupplier.get());  // Output: Welcome to Sudipta's Github!
+        }
+    }
+    ```
+
+#### Function\<T, R>
+- **Represents:** A function that accepts one argument and produces a result.
+- **Abstract Method:** `R apply(T t)`
+- **Example:**
+    ```java
+    import java.util.function.Function;
+
+    public class FunctionExample {
+        public static void main(String[] args) {
+            Function<Integer, String> toStringFunc = num -> "Number: " + num;
+            System.out.println(toStringFunc.apply(10));  // Output: Number: 10
+        }
+    }
+    ```
+
+#### Predicate\<T>
+- **Represents:** A condition (boolean-valued function) of one argument.
+- **Abstract Method:** `boolean test(T t)`
+- **Example:**
+    ```java
+    import java.util.function.Predicate;
+
+    public class PredicateExample {
+        public static void main(String[] args) {
+            Predicate<String> isLongerThan5 = s -> s.length() > 5;
+            System.out.println(isLongerThan5.test("Sudipta"));   // true
+            System.out.println(isLongerThan5.test("Sen"));     // false
+        }
+    }
+    ```
+
+#### Summary Table
+| Interface       | Input  | Output    | Use Case                               |
+| --------------- | ------ | --------- | -------------------------------------- |
+| `Consumer<T>`   | `T`    | `void`    | Performing an action (e.g., printing)  |
+| `Supplier<T>`   | `None` | `T`       | Supplying values (e.g., random number) |
+| `Function<T,R>` | `T`    | `R`       | Transforming input to output           |
+| `Predicate<T>`  | `T`    | `boolean` | Conditional checks                     |
+
+### Inheritance of Functional Interfaces
+
+#### Functional Interface extending Non functional interface
+
+```java
+interface LivingThing {
+    boid canBreathe(); //abstract method
+}
+
+@FunctionalInterface
+interface bird extends LivingThing {
+    void caFly(String val); //another abstract method
+}
+```
+- ❌ This will throw an compilation error as functional interface `bird` contains two abstract method.
+
+#### Non Functional Interface extending Funtional interface
+```java
+@FunctionalInterface
+Interface LivingThing {
+    boid canBreathe(); //abstract method
+}
+
+
+interface bird extends LivingThing {
+    void caFly(String val); //another abstract method
+}
+```
+- ✅ This will not throw any error as interface `bird` is not mentioned as a FunctionalInterface.
+
+#### Functional Interface extending functional interface
+
+```java
+@FunctionalInterface
+interface LivingThing {
+    boid canBreathe(); //abstract method
+}
+
+@FunctionalInterface
+interface bird extends LivingThing {
+    void canBreathe(String val); 
+}
+```
+- ✅ This is allowed since both has the same method
+
+```java
+@FunctionalInterface
+interface LivingThing {
+    boid canBreathe(); //abstract method
+}
+
+@FunctionalInterface
+interface bird extends LivingThing {
+    void caFly(String val); //another abstract method
+}
+```
+- ❌ This will throw an compilation error as functional interface `bird` contains two abstract method.
+
+## Reflection
+
+Reflection is a powerful feature that allows program to inspect and manipulate/change classes, methods, fields, and constructors at runtime, even if they are private. For example:
+- What all method present in class
+- What all fields present in class
+- What is the return type of the method
+- What is the modifier of the class
+- What all interfaces class has implemented
+- Change the value of the public and private fields of the Class etc..
+
+### What is class `Class`
+
+To reflect the class we first need to get an Object of `Class`. There is a class with the name `Class` itself. We need to create an object of this `Class`. This presents in `java.lang.reflect` package.
+
+- What is this class `Class`?
+    - Instance of the class `Class` represents classes during runtime.
+    - JVM creates one `Class` object for each and every class which is loaded during runtime.
+    - The `Class` object has meta data information about the particular class like its method, fields, constructor etc. 
+
+### How to get the class `Class` object?
+
+#### Using forName() method
+    ```java
+    class Bird {}
+
+    Class birdClass = Class.forName("Bird");
+    ```
+
+#### Using .class
+    ```java
+    class Bird {}
+
+    Class birdClass = Bird.class;
+    ```
+
+#### Using getClass() method
+
+    ```java
+    class Bird {}
+
+    Bird birdobj = new Bird();
+    Class birdClass - birdobj.getClass();
+    ```
+
+### Perform reflection of a Class
+Suppose we have the below class 
+```java
+public class Eagle {
+    public String breed;
+    private boolean cnaSwim;
+
+    public void fly(){
+        System.out.println("fly");
+    }
+
+    public void eat() {
+        System.out.println("eat");
+    }
+
+    private void dance() {
+        System.out.println("dancing");
+    }
+}
+```
+Now we will see how to do reflection of the class
+```java
+public class Main {
+    public static void main(String args[]) {
+        Class eagleClass = Eagle.class; //This eagleClass variable has all the metadata info about the class Eagle
+        System.out.println(eagleClass.getName()); //Output: Eagle
+        System.out.println(Modifier.toString(eagleClass.getModifiers())); //Output: Public
+    }
+}
+```
+- So here with the `Class` object we are fethcing all the metadata info about the class `Eagle`. Here only get methods are avaible, no set method. 
+
+### How to do reflection of a class 
+```java
+public class Main {
+    public static void main(String args[]) {
+        Class eagleClass = Eagle.class;
+        Methods[] methods = eagleClass.getMethods(); //This will only return public methods of this class and its parent class
+        Methods[] methods = eagleClass.getDeclareMethods(); //All public, private methods declare only in class Eagle
+        for(Method method: methods) {
+            System.out.println("Method name: " + method.getName());
+            System.out.println("Return type: " + method.getReturnType());
+            System.out.println("Class Name: " + method.getDeclaringClass());
+            System.out.println("****");
+        }
+    }
+}
+```

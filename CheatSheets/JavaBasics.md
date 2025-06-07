@@ -161,7 +161,9 @@
 >> ii. [Using `.class`](#using-class)<br>
 >> iii. [Using `getClass()` method](#using-getclass-method)<br>
 
-> c. [Perform reflection of a class](#perform-reflection-of-a-class)
+> c. [Perform reflection of a class](#perform-reflection-of-a-class)<br>
+> d. [Perform reflection of a method](#perform-reflection-of-a-method)<br>
+> e. [Perform reflection of a constructor](#perform-reflection-of-a-constructor)<br>
 
 ## OOPS Concepts
 
@@ -3564,8 +3566,10 @@ To reflect the class we first need to get an Object of `Class`. There is a class
     Class birdClass - birdobj.getClass();
     ```
 
-### Perform reflection of a Class
-Suppose we have the below class 
+### Perform reflection of a class
+Java Reflection API allows you to analyze and manipulate classes at runtime using the `Class` object
+
+Example Class: `Eagle`
 ```java
 public class Eagle {
     public String breed;
@@ -3584,7 +3588,7 @@ public class Eagle {
     }
 }
 ```
-Now we will see how to do reflection of the class
+Reflecting the Class
 ```java
 public class Main {
     public static void main(String args[]) {
@@ -3594,9 +3598,82 @@ public class Main {
     }
 }
 ```
-- So here with the `Class` object we are fethcing all the metadata info about the class `Eagle`. Here only get methods are avaible, no set method. 
+- So here with the `Class` object we are fethcing all the metadata info about the class `Eagle`.
+- Only **get** methods are available for class structure — there's no concept of `set` methods in `Class` because it doesn't **alter structure**.
 
-### How to do reflection of a class 
+`Class<?>` – Commonly Used Methods
+
+| Method                                                   | Description                                            |
+| -------------------------------------------------------- | ------------------------------------------------------ |
+| `getName()`                                              | Returns the full name of the class (with package).     |
+| `getSimpleName()`                                        | Returns the class name without package.                |
+| `getPackage()`                                           | Returns the package of the class.                      |
+| `getSuperclass()`                                        | Returns the superclass of the class.                   |
+| `getInterfaces()`                                        | Returns interfaces implemented by the class.           |
+| `getDeclaredFields()`                                    | Returns all fields (including private).                |
+| `getDeclaredMethods()`                                   | Returns all methods (including private).               |
+| `getDeclaredConstructors()`                              | Returns all constructors (including private).          |
+| `getMethods()`                                           | Returns all **public** methods (inherited + declared). |
+| `getConstructors()`                                      | Returns all **public** constructors.                   |
+| `getField(String name)`                                  | Gets a public field by name.                           |
+| `getDeclaredField(String name)`                          | Gets any field by name (private/public).               |
+| `getMethod(String name, Class<?>... paramTypes)`         | Gets public method with matching name/params.          |
+| `getDeclaredMethod(String name, Class<?>... paramTypes)` | Gets any method by name/params.                        |
+| `newInstance()` *(Deprecated)*                           | Creates an object (use constructor instead).           |
+| `getAnnotation(Class<A> annotationClass)`                | Fetches annotation if present.                         |
+
+Let's walk through a **simple, structured example** using `getMethod(String name, Class<?>... paramTypes)` from Java Reflection API
+
+We can reflectively access and invoke a public method of a class using:
+```java
+Method method = Class.getMethod("methodName", parameterTypes...);
+```
+Example Class:
+```java
+class Calculator {
+    public int add(int a, int b) {
+        return a + b;
+    }
+
+    public void greet(String name) {
+        System.out.println("Hello, " + name);
+    }
+}
+```
+
+Code using `getMethod()`
+```java
+import java.lang.reflect.Method;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        try {
+            // Step 1: Get Class object
+            Class<?> calcClass = Calculator.class;
+
+            // Step 2: Create an instance
+            Calculator calcInstance = new Calculator();
+
+            // Step 3: Get Method object for 'add(int, int)'
+            Method addMethod = calcClass.getMethod("add", int.class, int.class);
+
+            // Step 4: Invoke the method with arguments
+            Object result = addMethod.invoke(calcInstance, 5, 7);
+            System.out.println("Result of add: " + result);  // Output: Result of add: 12
+
+            // Step 5: Get Method object for 'greet(String)'
+            Method greetMethod = calcClass.getMethod("greet", String.class);
+
+            // Step 6: Invoke the greet method
+            greetMethod.invoke(calcInstance, "Sudipta");  // Output: Hello, Sudipta
+        } catch (Exception e1) {
+            
+        }
+    }
+}
+```
+
+### Perform reflection of a Method
 ```java
 public class Main {
     public static void main(String args[]) {
@@ -3612,3 +3689,132 @@ public class Main {
     }
 }
 ```
+- `getMethods()` and `getDeclareMethods()` are defined in `java.lang.Object`
+
+`Method[]` (from `getDeclaredMethods()` or `getMethods()`)
+
+| Method                                             | Description                                        |
+| -------------------------------------------------- | -------------------------------------------------- |
+| `getName()`                                        | Returns the method name.                           |
+| `getReturnType()`                                  | Returns the return type of the method.             |
+| `getParameterTypes()`                              | Returns array of parameter types.                  |
+| `getModifiers()`                                   | Returns modifiers (public/private/etc.)            |
+| `isAnnotationPresent(Class<? extends Annotation>)` | Checks if annotation is present.                   |
+| `invoke(Object obj, Object... args)`               | Invokes the method with given arguments.           |
+| `getAnnotations()`                                 | Returns all annotations.                           |
+| `isAccessible()`                                   | Checks if method is accessible.                    |
+| `setAccessible(true)`                              | Allows access to private/protected methods.        |
+| `toString()`                                       | Returns string representation of method signature. |
+
+### Perform Reflection of Fields
+```java
+public class Main {
+    public static void main(String args[]) {
+        Class eagleClass = Eagle.class;
+        Filed[] fields = eagle.getFields(); //This only give public fields
+        Filed[] fields = eagle.getDeclaredFields(); //Both public and private fields
+        for(Field field: fields) {
+            System.out.println("FieldName: " + field,getName());
+            System.out.println("Type: " + field.getType());
+            System.out.println("Modifier: " + Modifier.toString(field.getModifiers()));
+            System.out.println("********");
+        }
+    } 
+}
+```
+
+To set the value of **public and private fields**, we use the Field class from `java.lang.reflect`. The process involves:
+
+1. Getting the `Class` object of the target.
+2. Getting the `Field` object via `getField()` (for public) or `getDeclaredField()` (for private).
+3. Making the field accessible if it's private.
+4. Setting the value using `field.set(classInstance, ...)`.
+
+```java
+import java.lang.reflect.Field;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        // Create an instance of Eagle
+        Eagle eagle = new Eagle();
+
+        // Step 1: Get the Class object
+        Class<?> clazz = eagle.getClass();
+
+        // 🔹 Setting a public field
+        Field breedField = clazz.getField("breed"); // public field
+        breedField.set(eagle, "Golden Eagle");
+
+        // 🔹 Setting a private field
+        Field canSwimField = clazz.getDeclaredField("canSwim"); // private field
+        canSwimField.setAccessible(true); // allow access to private field
+        canSwimField.set(eagle, true); // set value
+
+        // Printing the values to verify
+        System.out.println("Breed: " + eagle.breed); // Output: Breed: Golden Eagle
+
+        // Accessing private field value using reflection
+        boolean swimAbility = (boolean) canSwimField.get(eagle);
+        System.out.println("Can Swim: " + swimAbility); // Output: Can Swim: true
+    }
+}
+```
+- So reflection breaks the principal of OOPS that private members can only be accessable from inside the class.
+
+### Perform Reflection of a Constructor
+
+```java
+import java.lang.reflect.Constructor;
+
+class Bird {
+    private Bird() {
+        System.out.println("No-arg constructor called");
+    }
+
+    private Bird(String name) {
+        System.out.println("One-arg constructor called: " + name);
+    }
+
+    private Bird(String name, int age) {
+        System.out.println("Two-arg constructor called: " + name + ", " + age);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+
+        // No-arg constructor
+        Constructor<Bird> ctor1 = Bird.class.getDeclaredConstructor();
+        ctor1.setAccessible(true); // Bypasses private access
+        Bird b1 = ctor1.newInstance(); // Instantiates object
+
+        // One-arg constructor
+        Constructor<Bird> ctor2 = Bird.class.getDeclaredConstructor(String.class);
+        ctor2.setAccessible(true);
+        Bird b2 = ctor2.newInstance("Eagle");
+
+        // Two-arg constructor
+        Constructor<Bird> ctor3 = Bird.class.getDeclaredConstructor(String.class, int.class);
+        ctor3.setAccessible(true);
+        Bird b3 = ctor3.newInstance("Parrot", 2);
+    }
+}
+```
+- So we can instantiates the class with private constructor i.e we can instantiate a singleton class 
+- Reflection breaks singleton guarantee by creating multiple instances of the class.
+
+####  How to Prevent This
+
+To prevent reflection from breaking singleton:
+
+1. Throw exception in constructor if instance already exists:
+    ```java
+    private static boolean instanceCreated = false;
+
+    private DBConnection() {
+        if (instanceCreated) throw new RuntimeException("Use getInstance()");
+        instanceCreated = true;
+    }
+    ```
+
+2. Or, use Enum Singleton, which is reflection-safe

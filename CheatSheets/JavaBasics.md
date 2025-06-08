@@ -129,8 +129,8 @@
 >> ii. [Interface Inside an interface](#interface-inside-an-interface)<br>
 
 > b. [Default Method](#default-method)<br>
->>> - [Class implements multiple interfaces having same default method](#problem-what-happens-when-a-class-implements-multiple-interfaces-having-same-default-method)<br>
->>> - [Overriding and Inheriting Default Methods](#overriding-and-inheriting-default-methods)<br>
+>> i. [Class implements multiple interfaces having same default method](#problem-what-happens-when-a-class-implements-multiple-interfaces-having-same-default-method)<br>
+>> ii. [Overriding and Inheriting Default Methods](#overriding-and-inheriting-default-methods)<br>
 
 
 > c. [Static methods](#static-methods-1)<br>
@@ -165,6 +165,25 @@
 > d. [Perform reflection of a method](#perform-reflection-of-a-method)<br>
 > e. [Perform reflection of a constructor](#perform-reflection-of-a-constructor)<br>
 
+10. [Annotations](#annotations)<br>
+> a. [What are annotations](#what-are-annotations)<br>
+> b. [Types of annotations](#types-of-annotations)<br>
+>> i. [Pre defined annotations](#pre-defined-annotations)<br>
+>>> - [Java code annotations](#java-code-annotations-like-class-method-etc)<br>
+>>>> - [@Deprecated](#1-deprecated)<br>
+>>>> - [@Override](#2-override)<br>
+>>>> - [@Suppresswarning](#3-suppresswarningsunchecked)<br>
+>>>> - [@Functional Interface](#functional-interface)<br>
+>>>> - [@SafeVarargs](#5-safevarargs)<br>
+
+>>> - [Meta Annotations](#meta-annotations-used-on-annotations)<br>
+>>>> - [@Target](#1-target)
+>>>> - [@Retention](#2-retention)
+>>>> - [@Documented](#3-documented)
+>>>> - [@Inherited](#4-inherited)
+>>>> - [@Repeatable](#5-repeatable)
+
+>> ii. [Custom(user-defined) annotations](#custom-annotations--user-defined)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -3818,3 +3837,513 @@ To prevent reflection from breaking singleton:
     ```
 
 2. Or, use Enum Singleton, which is reflection-safe
+
+## Annotations
+
+### What Are Annotations?
+Annotations in Java are **metadata** (information) about the code. They do **not directly affect program logic**, but they can:
+- Provide instructions to the compiler
+- How to read metadata information? Using reflection at runtime
+- Be used by frameworks/libraries to generate code or configurations
+- Its usage is optional
+- We can use this meta data information at runtime and can add certain logic in our code if wanted
+- It can be used anywhere like `Classes`, `Methods`, `Interface`, `fields`, parameters etc
+- Example:
+    ```java
+    interface Bird {
+        public boolean fly();
+    }
+
+    public class Eagle implements Bird {
+        @Override // This @ is annotation
+        public boolean fly() {
+            return true;
+        }
+    }
+    ```
+    - This `@` is annotation, without this code will not break. By adding this the **compiler will check that the defination of the method is same or not**.
+
+### Types of Annotations
+
+#### Pre-Defined Annotations
+##### Java Code Annotations (like class method etc)
+
+###### 1. `@Deprecated`
+- This is a compile time annotations
+- Usage of Deprecated Class or Method or fields, shows us compile time WARNING
+- Deprecation means, no further improvement is happpening on this and use new alternative method or field instead
+- Can be used over: **Constructor, Field, local variable, method, package and type(class, interface, enum)**
+- Example:
+    ```java
+    class Calculator {
+        @Deprecated
+        public void greet(String name) {
+            System.out.println("Hello, " + name);
+        }
+    }
+
+    class Main {
+        public static void main(String[] args) {
+            Calculator cal = new Calculator();
+            cal.greet("Sudipta");
+        }
+    }
+    ```
+- Output:
+    ```bash
+    Note: Main.java uses or overrides a deprecated API.
+    Note: Recompile with -Xlint:deprecation for details.
+    Hello, Sudipta
+    ```
+    
+###### 2. `@Override`
+- During compile time, it will check that the method should be overridden
+- And throws compiler time error, if it do not match with the parent method.
+- Can be used over: `METHODS`
+- Example:
+    ```java
+    class Bird {
+        public  boolean fly() { return false; }
+    }
+
+    class Eagle extends Bird {
+        @Override
+        public  boolean fly(int x) {
+            return true;
+        }
+    }
+    ```
+- Output:
+    ```bash
+    ERROR!
+    Main.java:9: error: method does not override or implement a method from a supertype
+        @Override
+    ```
+    - No error will occur without `@Override` annotation
+###### 3. `@SuppressWarnings("unchecked")`
+- It will tell compiler to IGNORE any compile time WARNING.
+- Use it safely, could led to **Run time exception** if any valid warning is IGNORED
+- Can be used over: **Constructor, Field, local variable, method and type(class, interface, enum)**
+- Example
+    ```java
+    class Main {
+        // Method with suppression - compiler warning
+        public static void withoutSuppression() {
+            List rawList = new ArrayList(); // raw type
+            rawList.add("Java");
+
+            // Unchecked cast
+            List<String> list = (List<String>) rawList;
+            System.out.println("Without suppression: " + list);
+        }
+
+        // Method with suppression - no compiler warning
+        @SuppressWarnings("unchecked")
+        public static void withSuppression() {
+            List rawList = new ArrayList(); // raw type
+            rawList.add("Java");
+            
+            // Unchecked cast
+            List<String> list = (List<String>) rawList;
+            System.out.println("With suppression: " + list);
+        }
+        
+        public static void main(String[] args) {
+            withoutSuppression();
+            withSuppression();
+        }
+    }
+    ```
+- Output:
+    ```bash
+    Note: Main.java uses unchecked or unsafe operations.
+    Note: Recompile with -Xlint:unchecked for details.
+    Without suppression: [Java]
+    With suppression: [Java]
+    ```
+    - Both methods **work correctly** and produce the same output at runtime.
+    - `rawList` is declared without generic type (`List` instead of `List<String>`), which is unsafe.
+    - When we cast it to `List<String>`, the compiler issues a **warning**:
+        `unchecked cast: 'java.util.List' to 'java.util.List<java.lang.String>'`
+
+###### 4. `@FunctionalInterface`
+- Restrict Interface to have only 1 abstract method
+- Throws Compilation error, if more than 1 abstract method found
+- Can be used over: **Type (Class or interface, enum)**
+- Example:
+    ```java
+    @FunctionalInterface
+    interface bird {
+        void fly();
+        void eat();
+    }
+    ```
+- Output:
+    ```bash
+    ERROR!
+    Main.java:5: error: Unexpected @FunctionalInterface annotation
+    @FunctionalInterface
+    ^
+    bird is not a functional interface
+        multiple non-overriding abstract methods found in interface bird
+    1 error
+    ```
+###### 5. `@SafeVarargs`
+- Used to suppress "Heap pollution warning"
+- Used over methods and Constructors which has **Variable Arguments as parameter**
+- Method should be either static or final (i.e methods which can not be overridden)
+- In java9, we can also use it on private methods.
+
+**Heap Pollution**
+
+Object of One type (Example String), storing the reference of another type Object (Example Integer)
+
+Example:
+```java
+public class HeapPollutionDemo {
+    
+    public static void main(String[] args) {
+        List<String> list1 = new ArrayList<>();
+        list1.add("Hello");
+
+        List<Integer> list2 = new ArrayList<>();
+        list2.add(100);
+
+        // This causes heap pollution
+        printVarArgs(list1, list2);  // Mixing types!
+    }
+
+    @SafeVarargs
+    static void printVarArgs(List<String>... stringLists) {
+        Object[] array = stringLists; // Legal, but dangerous
+        array[0] = Arrays.asList(42); // Heap pollution happens here
+
+        // Runtime exception: ClassCastException
+        String s = stringLists[0].get(0); // Tries to cast Integer to String
+        System.out.println(s);
+    }
+}
+```
+Output:
+```bash
+Exception in thread "main" java.lang.ClassCastException: 
+java.lang.Integer cannot be cast to java.lang.String
+```
+
+What Went Wrong:
+- `stringLists` is a **generic varargs parameter** (`List<String>...`).
+- Inside the method, we **bypassed type safety** by assigning an `Integer` list to the array holding `List<String>`s.
+- Later, when trying to retrieve and cast to `String`, a `ClassCastException` occurs.
+
+Why This Is Called Heap Pollution:
+
+At runtime, the JVM **can't enforce generic type constraints** due to **type erasure**. The method was supposed to handle only `List<String>`, but it ends up containing `List<Integer>`, violating type safety — that’s **heap pollution**.
+
+Best Practice:
+
+When we are **100% sure that heap pollution is not happening** and we want to surpress the warning Use the `@SafeVarargs` annotation.
+    
+##### Meta Annotations (Used on Annotations)
+###### 1. `@Target`
+- This annotation is a **meta-annotation**—an annotation that applies to other annotations. It specifies **where** your custom annotation can be applied in the code.
+- Example
+    ```java
+    @Target(ElementType.TYPE)
+    public @interface MyAnnotation1 {
+    }
+    
+    @Target(ElementType.METHOD, ElementType.CONSTRUCTOR)
+    public @interface MyAnnotation2 {
+    }
+    ```
+    - This is how we create user defined annotations. Here `MyAnnotation1` is a user defined annotation which can be applied only on `Class`, `Interface`, `Enum`
+    - Here `MyAnnotation2` is also a user defined annotation which can be applied only on Method and Constructor
+
+###### 2. `@Retention`
+- It is used **on other annotations** to specify **how long the annotation should be retained** (i.e., where and when it is available).
+- It is defined in the `java.lang.annotation` package.
+- The `RetentionPolicy` enum defines 3 levels of retention:
+    | RetentionPolicy     | Description |
+    | ------------------- | ---------------------- |
+    | `SOURCE`            | Annotation is **discarded during compilation**. Not present in the `.class` file. Used for compile-time checks (e.g., `@Override`). This is the default behaviour.|
+    | `CLASS` *(default)* | Annotation is **stored in the `.class` file** but **not available at runtime** via reflection.    |
+    | `RUNTIME`           | Annotation is **retained at runtime**, so it **can be accessed via reflection**. Most custom annotations use this.                  |
+- Example:
+    ```java
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface MyAnnotation {
+        String value();
+    }
+    ```
+    Now you can retrieve this annotation using Java Reflection:
+    ```java
+    @MyAnnotation("Test")
+    class Demo {}
+
+    public class Main {
+        public static void main(String[] args) {
+            Class<?> clazz = Demo.class;
+            MyAnnotation annotation = clazz.getAnnotation(MyAnnotation.class);
+            System.out.println(annotation.value());  // Output: Test
+        }
+    }
+    ```
+###### 3. `@Documented`
+- By default, annotations are ignored when java Documentation is generated.
+- With this meta-annotation even **Annotations will come in Java Docs**
+
+###### 4. `@Inherited`
+- By default, annotations applied on parent class are not available to child classes
+- But it allows a subclass inherit annotations from a superclass
+- It has no effect, if annotation is used other than a class
+- Example 1: With `@Inherited`
+
+    **Step 1:** Define the annotation
+    ```java
+    import java.lang.annotation.*;
+
+    @Inherited
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface Role {
+        String value();
+    }
+    ```
+
+    **Step 2:** Annotate the parent class
+    ```java
+        @Role("Admin")
+        class User {
+        }
+    ```
+
+    **Step 3:** Create a child class without annotation
+    ```java
+    class SuperUser extends User {
+    }
+    ```
+
+    **Step 4:** Access via reflection
+    ```java
+    public class Main {
+        public static void main(String[] args) {
+            Role role = SuperUser.class.getAnnotation(Role.class);
+            if (role != null) {
+                System.out.println("Role: " + role.value()); // Output: Role: Admin
+            } else {
+                System.out.println("No Role annotation found.");
+            }
+        }
+    }
+    ```
+- Example 2: Without `@Inherited`
+
+    Let’s remove `@Inherited` from the annotation.
+
+    **Step 1:** Define the annotation
+    ```java
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface Role {
+        String value();
+    }
+    ```
+    Same rest of the setup.
+    
+    **Step 4:** Output
+    ```java
+    // Output: No Role annotation found.
+    ```
+    Because `@Inherited` is not present, the subclass doesn't inherit the annotation from the superclass.
+
+###### 5. `@Repeatable`
+- What is it?
+
+    The `@Repeatable` annotation was introduced in **Java 8** to allow **repeating the same annotation multiple times on the same element** (e.g., class, method, field).
+
+- Why was it introduced?
+
+    Before Java 8, if we wanted to apply the same annotation more than once on an element, we had to group them inside a container annotation manually.
+
+    `@Repeatable` simplifies this by letting you declare the annotation multiple times directly.
+
+- How to Use `@Repeatable`
+
+    To make an annotation repeatable:
+    1. Create a container annotation that holds an array of the repeatable annotation.
+        - Only **one container annotation** per repeatable type is allowed.
+    2. Use `@Repeatable(ContainerAnnotation.class)` on the annotation we want to repeat.
+
+- Example
+
+    1. Define the repeatable annotation
+        ```java
+        import java.lang.annotation.*;
+
+        @Repeatable(Hints.class)
+        @Retention(RetentionPolicy.RUNTIME)
+        @Target(ElementType.TYPE)
+        public @interface Hint {
+            String value();
+        }
+        ```
+    
+    2. Define the container annotation
+        ```java
+        import java.lang.annotation.*;
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @Target(ElementType.TYPE)
+        public @interface Hints {
+            Hint[] value();
+        }
+        ```
+    
+    3. Use it multiple times
+        ```java
+        @Hint("hint1")
+        @Hint("hint2")
+        class Person {
+        }
+        ```
+    
+    4. Accessing via reflection
+        ```java
+        import java.lang.annotation.Annotation;
+
+        public class Main {
+            public static void main(String[] args) {
+                Hint[] hints = Person.class.getAnnotationsByType(Hint.class);
+                for (Hint hint : hints) {
+                    System.out.println(hint.value());
+                }
+            }
+        }
+        ```
+        ```bash
+        hint1
+        hint2
+        ```
+
+- Real-World Use Cases
+
+    | Use Case                       | Annotation Example             |
+    | ------------------------------ | ------------------------------ |
+    | Multiple security roles        | `@Role("ADMIN") @Role("USER")` |
+    | Scheduled tasks                | `@Schedule(day = "Mon")`       |
+    | Database column constraints    | `@Constraint(...)`             |
+    | Swagger or OpenAPI annotations | `@ApiResponse(...)`            |
+
+
+#### Custom Annotations / User Defined
+
+Custom annotations are **user-defined metadata** used to provide additional information about your code. Java allows you to create your own annotations in addition to using built-in ones like `@Override`, `@Deprecated`, etc.
+
+Creating an Annotation with method (its more like a field):
+- No parameter, no body
+- Return type is restricted to **Primitive, Class, String, enums, annotations and array of these types**.
+-  Syntax to Define a Custom Annotation
+    ```java
+    import java.lang.annotation.*;
+
+    @Target(ElementType.TYPE)       // Where this annotation can be applied (e.g., class, method)
+    @Retention(RetentionPolicy.RUNTIME) // Available at runtime
+    public @interface MyAnnotation {
+        String value();  // element (acts like a method)
+        int version() default 1;  // default value
+    }
+    ```
+- Example: Creating and Using a Custom Annotation
+    1. Define the Annotation:
+        ```java
+        import java.lang.annotation.*;
+
+        @Target(ElementType.METHOD)
+        @Retention(RetentionPolicy.RUNTIME)
+        public @interface Info {
+            String author();
+            String date();
+        }
+        ```
+    
+    2. Use the Annotation:
+        ```java
+        public class Test {
+            @Info(author = "Sudipta", date = "2025-06-07")
+            public void display() {
+                System.out.println("Displaying...");
+            }
+        }
+        ```
+    
+    3.  Accessing Custom Annotation via Reflection:
+        ```java
+        import java.lang.reflect.Method;
+
+        public class Main {
+            public static void main(String[] args) throws Exception {
+                Method method = Test.class.getMethod("display");
+                Info info = method.getAnnotation(Info.class);
+                
+                System.out.println("Author: " + info.author());
+                System.out.println("Date: " + info.date());
+            }
+        }
+        ```
+- Example: Creating and Using a Custom Annotation with Default Value
+    1. Define the Annotation
+        ```java
+        import java.lang.annotation.Retention;
+        import java.lang.annotation.RetentionPolicy;
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface Info {
+            String author() default "Unknown";
+            String date() default "N/A";
+            int version() default 1;
+        }
+        ```
+    
+    2. Use the Annotation
+        ```java
+        @Info(author = "Sudipta Sen", version = 2)
+        class MyClass {
+            public void display() {
+                System.out.println("Running MyClass...");
+            }
+        }
+        ```
+        We can also skip some or all elements to use the default values:
+        ```java
+        @Info  // uses all default values
+        class AnotherClass {
+            public void show() {
+                System.out.println("Another class here...");
+            }
+        }
+        ```
+    3. Access Annotation via Reflection
+        ```java
+        import java.lang.annotation.Annotation;
+
+        public class Main {
+            public static void main(String[] args) {
+                Class<MyClass> obj = MyClass.class;
+
+                // Get the annotation
+                Info info = obj.getAnnotation(Info.class);
+
+                // Print the annotation values
+                System.out.println("Author: " + info.author());
+                System.out.println("Date: " + info.date());
+                System.out.println("Version: " + info.version());
+            }
+        }
+        ```
+
+        Output:
+        ```java
+        Author: Sudipta Sen
+        Date: N/A
+        Version: 2
+        ```

@@ -177,13 +177,27 @@
 >>>> - [@SafeVarargs](#5-safevarargs)<br>
 
 >>> - [Meta Annotations](#meta-annotations-used-on-annotations)<br>
->>>> - [@Target](#1-target)
->>>> - [@Retention](#2-retention)
->>>> - [@Documented](#3-documented)
->>>> - [@Inherited](#4-inherited)
->>>> - [@Repeatable](#5-repeatable)
+>>>> - [@Target](#1-target)<br>
+>>>> - [@Retention](#2-retention)<br>
+>>>> - [@Documented](#3-documented)<br>
+>>>> - [@Inherited](#4-inherited)<br>
+>>>> - [@Repeatable](#5-repeatable)<br>
 
 >> ii. [Custom(user-defined) annotations](#custom-annotations--user-defined)<br>
+
+11. [Exception](#exception)<br>
+> a. [Types of exceptions](#types-of-exceptions)<br>
+> b. [Error vs exception](#error-vs-exception)<br>
+> c. [Compile time exception](#compile-time-exception)<br>
+> d. [Runtime exception](#runtime-exception)<br>
+> e. [Common exception handling keywords](#common-exception-handling-keywords)<br>
+>> i. [try-catch](#1-try--catch)<br>
+>> ii. [finally](#2-finally)<br>
+>> iii. [throw](#3-throw)<br>
+>> iv. [throws](#4-throws)<br>
+
+> f. [User Defined (Custom) Exceptions](#user-defined-custom-exception)
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -4347,3 +4361,332 @@ Creating an Annotation with method (its more like a field):
         Date: N/A
         Version: 2
         ```
+## Exception
+
+An **Exception** is an event that disrupts the normal flow of a program. It occurs during runtime when the JVM encounters an error or an unexpected event.
+
+### Types of Exceptions
+
+Java has a well-defined **exception hierarchy**, all extending from `java.lang.Throwable`
+
+```java
+Throwable
+ ├── Error
+       ├── OutOfMemoryError
+       └── StackOverflowError
+       ├── VirtualMachineError
+       └── LinkageError
+ └── Exception
+      ├── Checked Exception (Compile Time Exception, Code will not compile)
+            ├── ClassNotFoundException
+            ├── InterruptedException
+            |── SQLException
+            ├── IOException
+                ├── FileNotFoundException
+                ├── EOFException
+                ├── SocketException
+            ├── SQLException 
+      └── Unchecked Exception (RuntimeException and its subclasses)
+            ├── ClassCastException
+            ├── ArithmeticException
+            ├── IndexOutOfBoundException
+            ├── NullPointerException
+            ├── IllegalArgumentException
+                ├── NumberFormatException
+```
+
+### Error vs Exception
+
+An **Error** in Java is a **serious issue** that indicates a **problem in the runtime environment**, typically outside the control of the application. These are **not meant to be caught or handled** by application code. It mainly caused by runtime environment(Unchecked) or JVM issues.
+
+- Errors are fatal problems (like memory leaks, JVM crashes) that should not be handled in code.
+- Exceptions are recoverable issues that should be handled to ensure program stability.
+
+Example of Error
+```java
+public class ErrorExample {
+    public static void main(String[] args) {
+        causeStackOverflow(1);
+    }
+
+    static void causeStackOverflow(int i) {
+        causeStackOverflow(i + 1);  // Recursion with no base case
+    }
+}
+```
+**Output:** `Exception in thread "main" java.lang.StackOverflowError`
+
+Example of Exception
+```java
+public class ExceptionExample {
+    public static void main(String[] args) {
+        try {
+            int a = 5 / 0;
+        } catch (ArithmeticException e) {
+            System.out.println("Caught an exception: " + e.getMessage());
+        }
+    }
+}
+```
+
+### Runtime Exception
+
+A **Runtime Exception** in Java is an **unchecked exception**, meaning the **compiler does not require it to be caught or declared** in the method signature. These exceptions occur **during the execution of the program** and typically represent **programming errors**, such as logic mistakes or improper use of APIs.
+- `There will be no error at compile time`
+
+```java
+public class RuntimeEx {
+    public static void main(String[] args) {
+        String name = null;
+        System.out.println(name.length());  // NullPointerException
+    }
+}
+```
+- ✅ This code will compile successfully but at the runtime it will break.
+
+### Compile-Time Exception
+
+A **Compile-Time Exception**, also called a **Checked Exception**, is an exception that is **checked by the compiler at compile time**. This means the Java compiler ensures that our code handles these exceptions using either:
+- a `try-catch` block, or
+- a `throws` declaration.
+
+If we don't handle or declare them, our code won't compile.
+
+- Problem:
+
+    ```java
+    import java.io.*;
+
+    public class CheckedEx {
+        public static void main(String[] args) {
+            FileReader file = new FileReader("data.txt"); // May throw FileNotFoundException
+            file.close();
+        }
+    }
+    ```
+    ❌ This code will NOT compile. We'll get a compile-time error like:
+    ```java
+    error: unreported exception FileNotFoundException; must be caught or declared to be thrown
+        FileReader file = new FileReader("data.txt");
+    ```
+- Solution:
+    
+    1. Use `try-catch`:
+        ```java
+        try {
+            FileReader file = new FileReader("data.txt");
+            file.close();
+        } catch (IOException e) {
+            System.out.println("File error: " + e.getMessage());
+        }
+        ```
+        - With `try-catch` the method itself handles the exception
+    
+    2. Declare exception using `throws`:
+        ```java
+        public static void main(String[] args) throws IOException {
+            FileReader file = new FileReader("data.txt");
+            file.close();
+        }
+        ```
+        - With `throws` the function delegates the handling of the Exception to its caller
+    
+    ✅ In both cases, you are **handling or declaring** the exception, which is mandatory for checked exceptions.
+
+### Common Exception Handling Keywords
+
+#### 1. try / catch
+
+- The `try` block contains code that might throw an exception, and the `catch` block handles/catch the exception which can be thrown by try block.
+- Try block is followed either by Catch block or finally block.
+
+Syntax:
+```java
+try {
+    // Code that may throw exception
+} catch (ExceptionType1 e1) {
+    // Handler for ExceptionType1
+} catch (ExceptionType2 e2) {
+    // Handler for ExceptionType2
+}
+```
+
+Importance of Sequencing:
+- Always catch subclasses of `Exception` before the superclasses.
+- Java reads catch blocks top-down. If a superclass is caught first, the compiler will complain that the subclass catch block is unreachable.
+- Example:
+    ```java
+    try {
+        int x = 10 / 0;
+    } catch (ArithmeticException e) {
+        System.out.println("Cannot divide by zero.");
+    } catch (Exception e) {
+        System.out.println("Generic Exception: " + e);
+    }
+    ```
+    We can also use multi-catch from Java 7 onwards:
+    ```java
+    catch (IOException | SQLException ex) {
+        ex.printStackTrace();
+    }
+    ```
+
+If a `catch` block handles an exception type that the corresponding `try` block can never throw, the Java compiler will 
+- allow it only if the exception is an **unchecked exception** (like RuntimeException or its subclasses). 
+    ```java
+    try {
+        System.out.println("Hello, world!");
+    } catch (NullPointerException e) {
+        System.out.println("Caught null pointer.");
+    }
+    ```
+    - **No error**, though the `try` block doesn't throw `NullPointerException`.
+- throw an error in case of **checked exception**.
+    ```java
+    try {
+        int a = 10 + 5;
+    } catch (IOException e) {
+        System.out.println("Caught IO exception.");
+    }
+    ```
+    Error:
+    ```vbnet
+    error: exception IOException is never thrown in body of corresponding try statement
+    ```
+This is enfored to ensure that:
+- We are not writing redundant or unreachable code.
+- We explicitly handle only those checked exceptions that might realistically occur in the try block.
+
+#### 2. finally
+- Used to guarantee the execution of a block of code regardless of whether an exception was thrown or not.
+- Typically used for resource cleanup (closing files, releasing DB connections, etc.).
+- We can add atmost one finally block.
+- Finally block is not handling any exception, either we need to handle the exception with catch block or delegates the handle to its caller using throws keyword.
+- Example:
+    ```java
+    try {
+        int x = 5 / 0;
+    } catch (ArithmeticException e) {
+        System.out.println("Caught exception.");
+    } finally {
+        System.out.println("This will always execute.");
+    }
+    ```
+    -  Even if a `return` statement or `System.exit(0)` is used, finally executes (except on abrupt termination).
+    - If JVM related issues like out of memory, system shut down or our process forcefully killed, then finally block will not be executed. 
+
+#### 3. throw
+- Used to explicitly throw an exception (either checked or unchecked).
+- We can throw only one exception at a time.
+- The exception must be of type `Throwable` or subclass.
+- Syntax
+    ```java
+    throw new IllegalArgumentException("Invalid input");
+    ```
+- Example:
+    ```java
+    public void setAge(int age) {
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+    }
+    ```
+- It is also used to rethrows an exception. Rethrowing an exception means catching an exception in a `catch` block and then throwing it again — either as the same exception or as a different one.
+- Example:
+    ```java
+    public class RethrowExample {
+
+        public static void riskyMethod() throws Exception {
+            try {
+                int a = 5 / 0; // This will throw ArithmeticException
+            } catch (ArithmeticException e) {
+                System.out.println("Caught in riskyMethod: " + e);
+                throw e; // Rethrow the same exception
+            }
+        }
+
+        public static void main(String[] args) {
+            try {
+                riskyMethod();
+            } catch (ArithmeticException e) {
+                System.out.println("Handled in main: " + e);
+            }
+        }
+    }
+    ```
+    Output:
+    ```csharp
+    Caught in riskyMethod: java.lang.ArithmeticException: / by zero
+    Handled in main: java.lang.ArithmeticException: / by zero
+    ```
+#### 4. throws
+- Used in method declaration to propagate checked exceptions to the caller instead of handling them within the method.
+- Can declare multiple exceptions: `throws IOException`, SQLException`
+- Doesn’t throw the exception itself—it declares the possibility.
+- Syntax:
+    ```java
+    public void readFile() throws IOException {
+        FileReader fr = new FileReader("data.txt");
+    }
+    ```
+
+### User defined (Custom) Exception
+
+User Defined Exceptions (also called Custom Exceptions) are exceptions created by the programmer to represent application-specific error scenarios that are not covered by built-in exceptions.
+
+#### How to Create a Custom Exception?
+
+We can create exception from extending the existing `Exception` and `RuntimeException` class.
+
+- `Exception` → if it’s a **checked exception**.
+    - Example:
+        ```java
+        class InvalidAgeException extends Exception {
+            public InvalidAgeException(String message) {
+                super(message);
+            }
+        }
+
+        class Voter {
+            void checkEligibility(int age) throws InvalidAgeException {
+                if (age < 18) {
+                    throw new InvalidAgeException("Age must be 18 or above to vote.");
+                } else {
+                    System.out.println("Eligible to vote.");
+                }
+            }
+
+            public static void main(String[] args) {
+                Voter v = new Voter();
+                try {
+                    v.checkEligibility(16);
+                } catch (InvalidAgeException e) {
+                    System.out.println("Caught Exception: " + e.getMessage());
+                }
+            }
+        }
+        ```
+- `RuntimeException` → if it’s an **unchecked exception**.
+    - Example:
+        ```java
+        class InvalidAgeException extends RuntimeException {
+            public InvalidAgeException(String message) {
+                super(message);
+            }
+        }
+
+        public class Voter {
+            public void register(int age) {
+                if (age < 18) {
+                    throw new InvalidAgeException("Age must be 18 or older to register");
+                }
+                System.out.println("Voter registered with age: " + age);
+            }
+
+            public static void main(String[] args) {
+                Voter voter = new Voter();
+                voter.register(16);  // This will throw the custom exception
+            }
+        }
+        ```
+- All the rules related to checked and unchecked exception are applicable here also. 

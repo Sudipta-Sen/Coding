@@ -196,7 +196,17 @@
 >> iii. [throw](#3-throw)<br>
 >> iv. [throws](#4-throws)<br>
 
-> f. [User Defined (Custom) Exceptions](#user-defined-custom-exception)
+> f. [User Defined (Custom) Exceptions](#user-defined-custom-exception)<br>
+>> i. [Create Custom Exception](#how-to-create-a-custom-exception)<br>
+
+12. [Multithreading and concurrency](#multithreading-and-concurrency)<br>
+> a. [Threads vs processes](#threads-vs-processes-in-java)<br>
+> b. [JVM memory structure and thread behavior](#jvm-memory-structure-and-thread-behavior)<br>
+>> i. [Code segment](#code-segment)<br>
+>> ii. [Data segment](#data-segment)<br>
+
+> c. [Multi-threading Defination](#defination-of-multi-threading)<br>  
+>> i. [Multitasking vs multithreading](#multitasking-vs-multithreading)<br>
 
 ## OOPS Concepts
 
@@ -4690,3 +4700,145 @@ We can create exception from extending the existing `Exception` and `RuntimeExce
         }
         ```
 - All the rules related to checked and unchecked exception are applicable here also. 
+
+## Multithreading and Concurrency
+
+### Threads vs Processes in Java
+
+#### Basic Definitions:
+
+| Term        | Definition    |
+| ----------- | ------------- |
+| **Process** | A process is an independent program in execution. It has its own memory space and system resources allocated by OS  |
+| **Thread**  | A thread is a lightweight sub-unit of a process. Multiple threads can run within the same process and share memory and resources. OR smallest sequence of instructions that are executed by CPU independently |
+
+#### Process:
+- Compilation (`javac Test.java`): generates bytecode that can be executed by JVM.
+- Execution (`java Test`): When tring to start execution JVM starts the new Process, here `Test` class contains public method.
+- Process never shares their allocated memory with others. 
+- **How much memory does a process gets?**
+
+    While creating the process `java \<MainClassName\>` command , a new JVM instance will get created and we can tell how
+    ```java
+    java -Xms256m -Xmx2g \<MainClassName\>
+    ```
+    - `Xms256m:` Sets the initial heap size 256MB, `Xms<size>`
+        - By default, the JVM sets the initial heap size to **1/64th of the physical memory (RAM)**, with an upper limit depending on the JVM implementation and platform.
+    - `Xmx2g:`  tells the JVM to allow the **heap memory** to grow up to 2 gigabytes maximum. If Java application tries to allocate more heap memory than the maximum specified by -Xmx (e.g., 2 GB in -Xmx2g), the JVM will throw `OutOfMemoryError`. `Xmx<size>`
+        - The default max heap is typically **1/4th of the physical memory**, again with platform-dependent caps.
+
+#### Threads
+- When a process is created it starts with 1 thread and that initial thread known as `main thread` and from that we can create multiple threads to perform task concurrently.
+    ```java
+    import java.lang.Thread; 
+    class Main {
+        public static void main(String[] args) {
+            System.out.println("Thread Name: "+Thread.currentThread().getName());
+        }
+    }
+    ```
+    Output:
+    ```bash
+    Thread Name: main
+    ```
+
+### JVM Memory Structure and Thread Behavior
+
+As we know, the JVM primarily uses heap and stack memory, but a deeper look reveals it also involves other memory segments such as:
+
+- Code Segment
+- Data Segment
+- Registers
+- Program Counter
+
+When You Run `java <MainClassName>`:
+1. A new process is created by the OS.
+2. A new JVM instance is launched for this process.
+    - Each process has its own separate JVM instance.
+    - This JVM instance includes all the memory segments mentioned above.
+    - We can configure JVM heap size for each individual program using flags like `-Xmx` (max heap) and `-Xms` (initial heap).
+
+Multi-threading within a JVM Process:
+
+Let’s say the JVM process runs **three threads**: `Thread1`, `Thread2`, and `Thread3`.
+- Shared among all threads:
+    - **Code segment:** The bytecode of the program.
+    - **Data segment:** Static variables and constants.
+    - **Heap memory:** All objects created with new.
+- Thread-specific (not shared):
+    - **Stack:** Each thread has its own call stack.
+    - **Registers:** Temporary storage for computations.
+    = **Program Counter (PC):** Keeps track of the next instruction to execute for each thread.
+
+![](Snippets/java_multithread_1.png)
+
+#### Code Segment
+
+The code segment, also known as the **method area** in Java, is a part of JVM memory **where class-level data and bytecode** are stored.
+
+What is Stored in the Code Segment?
+- Bytecode of loaded classes
+- Method definitions
+- Runtime Constant Pool
+- Metadata about classes (fields, methods, interfaces)
+
+Characteristics:
+- Shared among all threads in a JVM process.
+- Allocated when the class is loaded by the classloader.
+- It is read-only in nature — threads can execute from it, but not modify it.
+- Exists for the lifetime of the class in memory.
+
+In the JVM specification, the code segment corresponds to:
+- Method Area (older terminology)
+- Metaspace (introduced in Java 8)
+
+#### Data Segment
+
+The Data Segment refers to the part of memory where:
+- Static and Global variables (class-level variables)
+- Final constants
+- Initialized data reside during runtime.
+- As every thread can read and modify the same data, synchronization is required between multiple threads.
+
+#### Heap
+- Objects created at runtime using "new" keyword are allocated in the heap
+- Heap is shared among all the thread of the same process (but not within process)
+- As every thread can read and modify the same data, synchronization is required between multiple threads. 
+
+#### Stack
+- Each thread has its own stack
+- It manages method calls, local variables
+
+#### Register
+- Whn JIT compiler convertes the Bytecode into native machine code, its uses register to optimized the generated machine code.  
+- It helps in context switching. When multiple threads are executed on a single CPU, the OS uses **context switching** to manage them. Here's how it works:
+    - Each thread has its own Program Counter (PC) which stores the next instruction to execute.
+    - Intermediate computation results are stored in **thread-specific registers**.
+    - The OS Scheduler is responsible for selecting which thread gets CPU time.
+    - When a thread is scheduled:
+        - The OS **loads that thread’s registers (including the PC)** into the **CPU registers**.
+        - The **CPU starts executing** the instructions for that thread.
+    - When the CPU switches to another thread:
+        - It saves the current CPU register state (intermediate results, PC) back to the thread’s register storage.
+        - Then it loads the next thread’s register data into the CPU, and execution continues.
+
+On a **single CPU system**, it may appear that multiple threads are running simultaneously. However, in reality, **only one thread executes at a time**, and the CPU rapidly switches between threads using context switching to create the illusion of parallelism.
+
+On the other hand, in a **multi-CPU (or multi-core)** system, **true parallelism is possible** — **multiple threads can actually run at the same time**, each on a separate CPU/core.
+
+### Defination of Multi-threading
+- Allows a program to perform multiple operations at the same time
+- Multiple threads of the same process share the resource such as memory space but still can perform task independently. 
+
+#### Multitasking vs Multithreading
+
+| Aspect    | **Multitasking**      | **Multithreading**         |
+| -------------- | ---------------------- | --------------------------------- |
+| **Definition**        | Running multiple **processes** at the same time | Running multiple **threads** within a single process   |
+| **Memory Usage**   | Each process has **its own memory space**. No shared memory.  | Threads **share the same memory** of the process 
+| **Context Switching** | Heavier (involves switching memory context)  | Lighter (threads share memory, so switching is faster)  |
+| **Performance**       | More overhead due to memory duplication and context switching | More efficient due to shared memory and faster context switching  |
+| **Managed By**        | Operating System (OS)   | Programmer or the Java Virtual Machine (JVM)  |
+| **Use Case Example**  | Running Chrome, VSCode, and Spotify at the same time          | A single browser tab loading images, videos, and scripts concurrently |
+| **Overhead**    | Higher      | Lower        |
+| **Fault Tolerance**   | Crash of one process doesn’t affect others | Crash of one thread may affect the entire application   |

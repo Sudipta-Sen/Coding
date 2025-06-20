@@ -208,6 +208,16 @@
 > c. [Multi-threading Defination](#defination-of-multi-threading)<br>  
 >> i. [Multitasking vs multithreading](#multitasking-vs-multithreading)<br>
 
+> d. [Thread Creation](#thread-creation)<br>
+>> i. [Extending Thread Class](#extending-the-thread-class)<br>
+>> ii. [Implementing runnable interface](#implementing-the-runnable-interface)<br>
+>> iii. [Using lambda expression](#using-lambda-expression-java-8)<br>
+>> iv. [Using ExecutorService](#using-executorservice-thread-pooling)<br>
+
+> e. [Thread LifeCycle](#thread-lifecycle)<br>
+> f. [Synchronized and Thread Satety](#synchronized-and-thread-satety)<br>
+> g. [Inter-Thread Communication](#inter-thread-communication)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -4842,3 +4852,109 @@ On the other hand, in a **multi-CPU (or multi-core)** system, **true parallelism
 | **Use Case Example**  | Running Chrome, VSCode, and Spotify at the same time          | A single browser tab loading images, videos, and scripts concurrently |
 | **Overhead**    | Higher      | Lower        |
 | **Fault Tolerance**   | Crash of one process doesn’t affect others | Crash of one thread may affect the entire application   |
+
+### Thread Creation
+
+####  Extending the Thread class
+
+```java
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("Thread running using Thread class");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        MyThread t1 = new MyThread();
+        t1.start(); // start() internally calls run()
+    }
+}
+```
+- Java doesn’t support multiple inheritance, so if we extend `Thread`, we can’t extend another class.
+- Commonly Used Thread Class Methods
+    | **Method** | **Description**       |
+    | ---------------------------- | ------------------------- |
+    | `start()`                    | Starts the thread; calls `run()` internally.                                  |
+    | `run()`                      | Entry point for thread execution; override with task logic.                   |
+    | `sleep(long millis)`         | Causes the current thread to pause for the given time in milliseconds.        |
+    | `join()`                     | Waits for the thread to die.                                                  |
+    | `join(long millis)`          | Waits for the thread to die for the specified time.                           |
+    | `isAlive()`                  | Returns `true` if the thread is still running.                                |
+    | `setName(String name)`       | Sets a name for the thread.                                                   |
+    | `getName()`                  | Returns the name of the thread.                                               |
+    | `getId()`                    | Returns the thread's unique ID.                                               |
+    | `getPriority()`              | Returns the thread’s priority (1 to 10).                                      |
+    | `setPriority(int priority)`  | Sets the thread’s priority (between `MIN_PRIORITY` and `MAX_PRIORITY`).       |
+    | `getState()`                 | Returns the current state of the thread (`NEW`, `RUNNABLE`, `BLOCKED`, etc.). |
+    | `interrupt()`                | Interrupts the thread (useful to stop sleeping or waiting thread).            |
+    | `isInterrupted()`            | Checks if the thread has been interrupted.                                    |
+    | `currentThread()` *(static)* | Returns a reference to the currently executing thread.                        |
+    | `yield()` *(static)*         | Hints the scheduler to pause the current thread and give others a chance.     |
+
+
+#### Implementing the Runnable interface
+
+```java
+class MyRunnable implements Runnable {
+    public void run() {
+        System.out.println("Thread running using Runnable interface");
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Thread t1 = new Thread(new MyRunnable()); // creates an instance of MyRunnable and passing that to Thread constructor
+        t1.start(); // Starts he thread here, internally calls run() method
+    }
+}
+```
+- Recommended approach: allows inheritance from other classes. The `Thread` instance executes the `run()` method defined in the class that implements the `Runnable` interface.
+- `Runnable` is a **functional interface** in Java that defines a single abstract method, `run()`. It is not a thread itself, but simply represents a functional interface. The `Thread` class implements Runnable to define the logic that should run in a separate thread.
+- Inside the `run()` method, the thread checks if `target != null`, and then calls `target.run()`. Here, `target` refers to the object of a class that implements the `Runnable` interface, which is passed to the `Thread` constructor.
+    ```java
+    @Override
+    public void run() {
+        if (target != null) {
+            target.run(); // delegate run to the actual Runnable implementation
+        }
+    }
+    ```
+    - In case of `Extending the Thread class` this run method got overwritten by the child class of thread.
+- What actually happens inside `start()` method of `Thread`? Or how does Java know to call the run() method of the Runnable class?
+
+    When we call thread.start(), Java does the following:
+    - It asks the OS to create a new thread using a native method (written in C/C++).
+    - Once the new thread is created, the JVM automatically calls the `run()` method of the `Thread` class in that new thread.
+#### Using Lambda Expression (Java 8+)
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Thread t1 = new Thread(() -> {
+            System.out.println("Thread running using lambda");
+        });
+        t1.start();
+    }
+}
+```
+
+#### Using ExecutorService (Thread Pooling)
+
+```java
+import java.util.concurrent.*;
+
+public class Main {
+    public static void main(String[] args) {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        executor.submit(() -> System.out.println("Thread from Executor"));
+        executor.shutdown();
+    }
+}
+```
+
+### Thread LifeCycle
+
+### Synchronized and Thread Satety
+
+### Inter-Thread Communication

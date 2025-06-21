@@ -209,15 +209,17 @@
 >> i. [Multitasking vs multithreading](#multitasking-vs-multithreading)<br>
 
 > d. [Thread Creation](#thread-creation)<br>
->> i. [Extending Thread Class](#extending-the-thread-class)<br>
->> ii. [Implementing runnable interface](#implementing-the-runnable-interface)<br>
->> iii. [Using lambda expression](#using-lambda-expression-java-8)<br>
->> iv. [Using ExecutorService](#using-executorservice-thread-pooling)<br>
+>> i. [Extending Thread Class](#1-extending-the-thread-class)<br>
+>> ii. [Implementing runnable interface](#2-implementing-the-runnable-interface)<br>
+>> iii. [Using lambda expression](#3-using-lambda-expression-java-8)<br>
+>> iv. [Using Executor Service](#4-using-executorservice-thread-pooling)<br>
 
 > e. [Thread LifeCycle](#thread-lifecycle)<br>
 > f. [Synchronized and Thread Satety](#synchronized-and-thread-satety)<br>
-> g. [Inter-Thread Communication](#inter-thread-communication)<br>
+>> i. [Monitor Lock](#monitor-lock-aka-intrinsic-lock)<br>
 
+> g. [Inter-Thread Communication](#inter-thread-communication)<br>
+>> i. [Spurious Wakeup](#spurious-wakeup)
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -4855,7 +4857,7 @@ On the other hand, in a **multi-CPU (or multi-core)** system, **true parallelism
 
 ### Thread Creation
 
-####  Extending the Thread class
+####  1. Extending the Thread class
 
 ```java
 class MyThread extends Thread {
@@ -4875,25 +4877,25 @@ public class Main {
 - Commonly Used Thread Class Methods
     | **Method** | **Description**       |
     | ---------------------------- | ------------------------- |
-    | `start()`                    | Starts the thread; calls `run()` internally.                                  |
-    | `run()`                      | Entry point for thread execution; override with task logic.                   |
-    | `sleep(long millis)`         | Causes the current thread to pause for the given time in milliseconds.        |
-    | `join()`                     | Waits for the thread to die.                                                  |
-    | `join(long millis)`          | Waits for the thread to die for the specified time.                           |
-    | `isAlive()`                  | Returns `true` if the thread is still running.                                |
-    | `setName(String name)`       | Sets a name for the thread.                                                   |
-    | `getName()`                  | Returns the name of the thread.                                               |
-    | `getId()`                    | Returns the thread's unique ID.                                               |
-    | `getPriority()`              | Returns the thread’s priority (1 to 10).                                      |
-    | `setPriority(int priority)`  | Sets the thread’s priority (between `MIN_PRIORITY` and `MAX_PRIORITY`).       |
+    | `start()`    | Starts the thread; calls `run()` internally.       |
+    | `run()`    | Entry point for thread execution; override with task logic.    |
+    | `sleep(long millis)` | Causes the current thread to pause for the given time in milliseconds.  |
+    | `join()`  | Waits for the thread to die.                                                  |
+    | `join(long millis)`          | Waits for the thread to die for the specified time.    |
+    | `isAlive()`  | Returns `true` if the thread is still running.             |
+    | `setName(String name)`   | Sets a name for the thread.        |
+    | `getName()`                  | Returns the name of the thread.       |
+    | `getId()`                    | Returns the thread's unique ID.       |
+    | `getPriority()`              | Returns the thread’s priority (1 to 10).        |
+    | `setPriority(int priority)`  | Sets the thread’s priority (between `MIN_PRIORITY` and `MAX_PRIORITY`).  |
     | `getState()`                 | Returns the current state of the thread (`NEW`, `RUNNABLE`, `BLOCKED`, etc.). |
-    | `interrupt()`                | Interrupts the thread (useful to stop sleeping or waiting thread).            |
-    | `isInterrupted()`            | Checks if the thread has been interrupted.                                    |
-    | `currentThread()` *(static)* | Returns a reference to the currently executing thread.                        |
-    | `yield()` *(static)*         | Hints the scheduler to pause the current thread and give others a chance.     |
+    | `interrupt()`                | Interrupts the thread (useful to stop sleeping or waiting thread). |
+    | `isInterrupted()`            | Checks if the thread has been interrupted.      |
+    | `currentThread()` *(static)* | Returns a reference to the currently executing thread.      |
+    | `yield()` *(static)*         | Hints the scheduler to pause the current thread and give others a chance.  |
 
 
-#### Implementing the Runnable interface
+#### 2. Implementing the Runnable interface
 
 ```java
 class MyRunnable implements Runnable {
@@ -4926,7 +4928,7 @@ public class Main {
     When we call thread.start(), Java does the following:
     - It asks the OS to create a new thread using a native method (written in C/C++).
     - Once the new thread is created, the JVM automatically calls the `run()` method of the `Thread` class in that new thread.
-#### Using Lambda Expression (Java 8+)
+#### 3. Using Lambda Expression (Java 8+)
 
 ```java
 public class Main {
@@ -4938,8 +4940,23 @@ public class Main {
     }
 }
 ```
+- We must think how the `run()` method is overridden here as neither `run()` is a abstract method nor `Thread` is a **functional interface**.
+    - The `Thread` class implements the `Runnable` interface, which defines a single abstract method `run()`. When we pass a lambda expression to the Thread constructor, we’re **passing a** `Runnable` **implementation** — since `Runnable` is a functional interface. So basically what we are doing is 
+        ```java
+        public class Main {
+            public static void main(String[] args) {
+                class myclass implements Runnable {
+                    public void run() {
+                        System.out.println("Thread running using lambda");
+                    }
+                }
+                Thread t1 = new Thread(new myclass());
+                t1.start();
+            }
+        }
+        ```
 
-#### Using ExecutorService (Thread Pooling)
+#### 4. Using ExecutorService (Thread Pooling)
 
 ```java
 import java.util.concurrent.*;
@@ -4955,6 +4972,307 @@ public class Main {
 
 ### Thread LifeCycle
 
+![](Snippets/thread_lifecycle.png )
+
+![](Snippets/thread_lifecycle_des.png )
+
 ### Synchronized and Thread Satety
 
+A `synchronized` **block** in Java is a construct used to ensure **mutual exclusion** — that is, **only one thread can execute the block at a time for a given object.**
+
+It is primarily used to prevent race conditions when multiple threads access and modify **shared resources**.
+
+Syntax:
+```java
+synchronized (lockObject) {
+    // Critical section
+    // Only one thread can execute this block at a time per lockObject
+}
+```
+- `lockObject` can be:
+    - `this` — for synchronizing on the current instance
+    - Any shared object
+    - Class-level lock using `ClassName.class` (for static synchronization)
+
+When a thread enters a synchronized block, it **acquires the monitor lock** of the object. Any other thread trying to enter a synchronized block or method on the **same object is blocked** until the lock is released.
+
+#### Monitor Lock (a.k.a. Intrinsic Lock)
+
+A monitor lock (or intrinsic lock) is the locking mechanism uses to manage synchronization between threads. Every **object** has an associated monitor lock.
+
+When a thread enters a **synchronized block or method**, it acquires the monitor lock **for the object (or class, for static methods)**. Only one thread can hold that lock at a time.
+
+The monitor lock is stored **within every object** in the JVM.
+
+
+- Life Cycle of Monitor Lock:
+    - Thread wants to enter `synchronized` method/block
+    - It tries to acquire the **monitor lock on the object**.
+    - If **lock is free**, thread enters and holds the lock.
+    - If **lock is taken**, thread waits (blocks) until it is available.
+    - When thread exits the synchronized section, it releases the lock.
+
+- Example:
+
+    lets take this synchronized code as example
+    ```java
+    class Printer {
+        public synchronized void printDoc() {
+            System.out.println(Thread.currentThread().getName() + ": " + " printDoc  starts");
+            try {
+                Thread.sleep(10000); 
+            } catch (InterruptedException e) {
+                e.printStackTrace(); 
+            }
+            System.out.println(Thread.currentThread().getName() + ": " + " printDoc end");
+        }
+        
+        public synchronized void rubishfunc() {
+            System.out.println(Thread.currentThread().getName() + ": " + " rubishfunc starts");
+            try {
+                Thread.sleep(10000); 
+            } catch (InterruptedException e) {
+                e.printStackTrace(); 
+            }
+            System.out.println(Thread.currentThread().getName() + ": " + " rubishfunc end");
+        }
+    }
+    ```
+    - When two threads try to call `printDoc()` on the same `Printer` object, only one will proceed at a time, due to the monitor lock on that object. Two threads can't run parallely.  
+        
+        ```java
+        class Main {
+            public static void main(String[] args) {
+                Printer p = new Printer();
+                Thread t1 = new Thread(()->p.printDoc());
+                Thread t2 = new Thread(()->p.printDoc());
+                try {
+                    t1.start();
+                    t2.start();
+                    t1.join();
+                    t2.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace(); 
+                }
+            }
+        }
+        ```
+        ```bash
+        Thread-0:  printDoc  starts
+        Thread-0:  printDoc end
+        Thread-1:  printDoc  starts
+        Thread-1:  printDoc end
+        ```
+        - Here we might think since `run()` **doesn't accept any arguments**, how is the lambda expression `() -> p1.printDoc()` getting access to `p`?
+            - Because `p1` is available in the **surrounding scope** (i.e. it's a **captured variable**), and Java allows lambdas and inner classes to **close over** (capture) **effectively final variables.**
+                ```java
+                Printer p = new Printer();  // <- p is captured here
+
+                Thread t1 = new Thread(() -> p.printDoc());  // lambda uses p
+                t1.start();
+                ```
+            - Here’s what happens:
+                - The lambda `() -> p1.printDoc()` is compiled to an implementation of the `Runnable` interface.
+                - Even though `run()` takes no parameters, it has access to `p` because the lambda closes over the variable from the surrounding method.
+                - This works only if `p` is **effectively final**, i.e., we don’t change its reference after assignment.
+            -  Behind the scenes:
+                ```java
+                class MyRunnable implements Runnable {
+                    private final Printer p1;
+                    
+                    MyRunnable(Printer p) {
+                        this.p1 = p;
+                    }
+
+                    @Override
+                    public void run() {
+                        p1.printDoc();
+                    }
+                }
+                Thread t1 = new Thread(new MyRunnable(p1));
+                ```
+
+    - When two threads try to call `printDoc()` on different `Printer` objects `p1` and `p2`, both can run parallely as monitor lock for differenet object are different.
+
+        ```java
+        class Main {
+            public static void main(String[] args) {
+                Printer p1 = new Printer();
+                Printer p2 = new Printer();
+                Thread t1 = new Thread(()->p1.printDoc());
+                Thread t2 = new Thread(()->p2.printDoc());
+                try {
+                    t1.start();
+                    t2.start();
+                    t1.join();
+                    t2.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace(); 
+                }
+            }
+        }
+        ```
+        ```bash
+        Thread-0:  printDoc  starts
+        Thread-1:  printDoc  starts
+        Thread-1:  printDoc end
+        Thread-0:  printDoc end
+        ```
+    - Even if two threads call **different synchronized methods of the same object**, they cannot run in parallel. This is because the **monitor lock is on the object**, not on methods. So, when one thread holds the lock, others must wait — no matter which synchronized method they call on that object.
+        ```java
+        class Main {
+            public static void main(String[] args) {
+                Printer p1 = new Printer();
+                Thread t1 = new Thread(()->p1.printDoc());
+                Thread t2 = new Thread(()->p1.rubishfunc());
+                try {
+                    t1.start();
+                    t2.start();
+                    t1.join();
+                    t2.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace(); 
+                }
+            }
+        }
+        ```
+    - Another example with  synchronized block
+        ```java
+        class Example {
+            public synchronized void Task1() {
+                System.out.println("task1 starts");
+                try {
+                    Thread.sleep(10000); 
+                } catch (InterruptedException e) {
+                    e.printStackTrace(); 
+                }
+                System.out.println("task1 ends");
+            }
+            
+            public void Task2() {
+                System.out.println("task2 starts outside synchronised block");
+                synchronized(this) {
+                    System.out.println("inside task2 synchronised");
+                    try {
+                        Thread.sleep(10000); 
+                    } catch (InterruptedException e) {
+                        e.printStackTrace(); 
+                    }
+                }
+                System.out.println("task2 ends");
+            }
+            
+            public void Task3() {
+                System.out.println("task3 starts");
+                System.out.println("task3 ends");
+            }
+        }
+        class Main {
+            public static void main(String[] args) {
+                Example obj = new Example();
+                Thread t1 = new Thread(()-> obj.Task1());
+                Thread t2 = new Thread(()-> obj.Task2());
+                Thread t3 = new Thread(()-> obj.Task3());
+                try {
+                    t1.start();
+                    t2.start();
+                    t3.start();
+                    t1.join();
+                    t2.join();
+                    t3.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace(); 
+                }
+            }
+        }
+        ```
+        ```bash
+        task2 starts outside synchronised block
+        task1 starts
+        task3 starts
+        task3 ends
+        task1 ends
+        inside task2 synchronised
+        task2 ends
+        ```
 ### Inter-Thread Communication
+
+Inter-thread communication refers to the process where multiple threads coordinate with each other by sharing data and signaling when certain conditions are met, especially when they need to wait or notify each other.
+
+In multithreaded applications, threads often depend on each other's work.
+
+- Example:
+    - A consumer thread may need to wait until a producer thread produces data.
+    - Instead of **busy-waiting (looping infinitely)**, we use proper coordination via `wait()` and `notify()`.
+
+- Methods in `Object` Class:
+    | Method        | Description        |
+    | ------------- | ------------------------- |
+    | `wait()`      | Causes current thread to release lock and **enter waiting state** until another thread invokes `notify()`/`notifyAll()` |
+    | `notify()`    | Wakes up **one** thread waiting on the same object      |
+    | `notifyAll()` | Wakes up **all** threads waiting on the object          |
+
+    ⚠️ These methods must be called inside a **synchronized block or method**.
+
+- Communication Pattern:
+    ```java
+    synchronized(lock) {
+        while (!condition) {
+            lock.wait(); // wait until some thread changes the condition
+        }
+        // condition met, proceed
+    }
+
+    synchronized(lock) {
+        // change the condition
+        lock.notify(); // or lock.notifyAll()
+    }
+    ```
+- Example: Producer-Consumer
+
+    ```java
+    class Shared {
+        int data;
+        boolean produced = false;
+
+        synchronized void produce(int val) throws InterruptedException {
+            while (produced) wait();  // wait if data already produced
+
+            data = val;
+            produced = true;
+            System.out.println("Produced: " + val);
+            notifyAll(); // signal consumer
+        }
+
+        synchronized int consume() throws InterruptedException {
+            while (!produced) wait();  // wait for data
+
+            produced = false;
+            System.out.println("Consumed: " + data);
+            notifyAll(); // signal producer
+            return data;
+        }
+    }
+    ```
+
+#### Spurious Wakeup
+
+A **spurious wakeup** is when a thread that is waiting (via `wait()`) **wakes up without being notified** (`notify()` or `notifyAll()`).
+
+This can happen due to reasons like:
+- OS-level signals,
+- JVM optimizations,
+- race conditions.
+
+➡️ **Because of this, Java recommends always calling** `wait()` **inside a loop that checks** the condition we are waiting for.
+
+Example Pattern to Handle Spurious Wakeups:
+```java
+synchronized(lock) {
+    while (!condition) {
+        lock.wait();
+    }
+    // proceed when condition is met
+}
+```
+- Using `if (condition)` is **wrong** here — use `while`.

@@ -219,7 +219,18 @@
 >> i. [Monitor Lock](#monitor-lock-aka-intrinsic-lock)<br>
 
 > g. [Inter-Thread Communication](#inter-thread-communication)<br>
->> i. [Spurious Wakeup](#spurious-wakeup)
+>> i. [Spurious Wakeup](#spurious-wakeup)<br>
+
+> h. [Deprecated methods stop, resume, suspended](#deprecated-methods-stop-resume-suspended)<br>
+> i. [Thread Joining, thread Priority, deamon thread](#thread-joining-thread-priority-deamon-thread)<br>
+> j, [Locks and semaphores](#locks-and-semaphores)<br>
+>> i. [Optimistic Locking](#optimistic-locking)<br>
+>> ii. [Pessimistic Locking](#pessimistic-locking)<br>
+>> iii. [Reentrant Lock](#reentrant-lock-reentrantlock)<br>
+>> iv. [Read Write Lock](#read-write-lock-reentrantreadwritelock)<br>
+>> v. [Semaphore](#semaphore-semaphore)<br>
+>> vi. [Stamped Lock](#stamped-lock-stampedlock)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -5276,3 +5287,315 @@ synchronized(lock) {
 }
 ```
 - Using `if (condition)` is **wrong** here — use `while`.
+
+### Deprecated methods stop, resume, suspended
+
+We can use methods `stop`, `resume` and `suspended` method in threads but those are deprecated.
+
+- **STOP:** Terminates the thread abruptly. No lock release, No resource clean up happens.
+- **SUSPEND:** Put the thread on hold (suspend) for temporarily. No lock release.
+- **RESUME:** Used to resume the execution of Suspended thread. 
+
+All of these operations could led to issues like deadlock.
+
+### Thread Joining, thread Priority, deamon thread
+
+- Thread Joining: It make one thread wait for the completion of another.
+
+    ```java
+    Thread t = new Thread(() -> {
+    // task
+    });
+    t.start();
+    t.join(); // main thread waits for t to finish
+    ```
+- Thread Priority: To hint the scheduler about the importance of a thread.
+    ```java
+    Thread t = new Thread();
+    t.setPriority(Thread.MAX_PRIORITY); // 10
+    ```
+    - Priority Levels:
+        - Thread.MIN_PRIORITY = 1
+        - Thread.NORM_PRIORITY = 5 (default)
+        - Thread.MAX_PRIORITY = 10
+    - Key Points:
+        - JVM may or may not strictly honor priorities (platform-dependent).
+        - Priorities **do not guarantee execution order**, but may affect scheduling.
+
+- Daemon Thread: To run background tasks that should not block JVM shutdown.
+    ```java
+    Thread t = new Thread(() -> {
+        while (true) {
+            // background task
+        }
+    });
+    t.setDaemon(true);
+    t.start();
+    ```
+    - Key Points:
+        - Must be set before start().
+        - JVM exits when **only daemon threads are left** running.
+        - Commonly used for:
+            - Garbage collection
+            - Background cleanup tasks
+            - Monitoring services
+            - Auto Save in editor
+        - Non deamon threads are known as user thread, by default threads are user thread.
+        - Daemon threads automatically stop when all user (non-daemon) threads finish execution.
+            - The JVM exits when all user threads have finished.
+            - At that point, **any remaining daemon threads are terminated** abruptly, **without completing their execution.**
+            - They do not get a chance to clean up or finish normally.
+    - Scenario:
+        - We have a user thread `t1`.
+        - The `main` **thread does not call** `t1.join()`, so it finishes quickly.
+        - We also have some **daemon threads** running.
+        - The user thread `t1` is still running after `main` exits.
+        -  What Happens with `t1`, `JVM` and `daemon threads`?
+            - The **JVM stays alive** as long as **any user thread (including** `t1`) is still running.
+            - Daemon threads will also continue to run alongside `t1`.
+            - JVM **does not shut down** because at least one non-daemon (user) thread is still active.
+
+### Locks and Semaphores
+
+Java provides the `Lock` interface as an alternative to the `synchronized` keyword. It offers more flexibility and control over synchronization.
+
+There are four types of customes locks
+1. Reentrant Lock
+2. Read-Write Lock
+3. semaphore
+4. stamped
+
+these lcoks don't depend on objects like synchronised method.
+
+#### Optimistic Locking
+
+- **Concept:**
+    - Assumes conflicts **are rare**.
+    - Allows **concurrent access** without locking the resource upfront.
+    - Before committing a change, it **checks whether another thread has modified the data.**
+    - If a conflict is detected, the operation is **retried**.
+
+- **How it Works:**
+    - Read the data and store a version/timestamp (or hash).
+    - Perform operations locally.
+    - Before writing, check if the version is unchanged.
+    - **If unchanged** → commit, **If changed** → abort/retry.
+
+- Real-World Use:
+    - **Databases:** Using a `version` column to detect concurrent updates.
+    - Java `StampedLock.tryOptimisticRead()`: Allows non-blocking read and validates afterward.
+
+####  Pessimistic Locking
+- **Concept:**
+    - Assumes **conflicts are likely.**
+    - Locks the resource **before** accessing it to prevent other **threads from modifying it.**
+    - Other threads are **blocked** until the lock is **released**.
+
+- **How it Works:**
+    - Acquire a lock before accessing the data.
+    - Perform operations.
+    - Release the lock after completion.
+
+- **Real-World Use:**
+    - Java `synchronized`, `ReentrantLock`, `readLock()/writeLock()`
+    - Databases: `SELECT FOR UPDATE` in SQL
+
+- **Optimistic Locking** is best when data conflicts are rare, and performance is critical.
+- **Pessimistic Locking** is safer when data conflicts are frequent and must be strictly avoided.
+
+#### Reentrant Lock (`ReentrantLock`)
+
+- Overview:
+    - Part of `java.util.concurrent.locks`.
+    - A thread can **re-acquire the same lock it already holds without deadlocking**.
+    - Provides better control than `synchronized`.
+- Example:
+    ```java
+    import java.util.concurrent.locks.ReentrantLock;
+
+    public class ReentrantLockExample {
+        private final ReentrantLock lock = new ReentrantLock();
+
+        public void performTask() {
+            lock.lock(); // acquire
+            try {
+                System.out.println("Locked by " + Thread.currentThread().getName());
+            } finally {
+                lock.unlock(); // always release
+            }
+        }
+    }
+    ```
+#### Read-Write Lock (`ReentrantReadWriteLock`)
+- Overview:
+    - Allows **multiple readers** or **one writer** at a time.
+    - Improves performance for read-heavy operations.
+    - Part of `java.util.concurrent.locks`
+
+- Example:
+    ```java
+    import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+    public class ReadWriteLockExample {
+        private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+        private int data = 0;
+
+        public void write(int value) {
+            rwLock.writeLock().lock();
+            try {
+                data = value;
+            } finally {
+                rwLock.writeLock().unlock();
+            }
+        }
+
+        public int read() {
+            rwLock.readLock().lock();
+            try {
+                return data;
+            } finally {
+                rwLock.readLock().unlock();
+            }
+        }
+    }
+    ```
+- Behavior of ReentrantReadWriteLock when **Writing Inside a Read Lock**
+    - Technically Allowed (No Exception Thrown)
+        - Java will **not throw any exception** if we **modify shared variables while holding only a read lock**.
+
+        - However, this is a **logical error:** the write operation is not protected properly, and this can lead to race conditions, data inconsistency, and thread-safety issues.
+    - Why?
+        - `ReadLock` is shared: multiple threads can hold it simultaneously, assuming they’re only reading.
+        - If one of them writes without holding a `writeLock`, it violates the read-write contract.
+        - No mechanism in `ReadLock` prevents you from writing to shared memory—it’s your responsibility to acquire the correct lock.
+
+####  Semaphore (`Semaphore`)
+
+- Overview:
+    - Part of `java.util.concurrent`.
+    - Controls access to a **fixed number of permits**.
+    - Allows a specified number of threads to access a resource concurrently.
+
+- Example:
+    ```java
+    import java.util.concurrent.Semaphore;
+
+    public class SemaphoreExample {
+        private final Semaphore semaphore = new Semaphore(3); // 3 permits
+
+        public void accessResource() {
+            try {
+                semaphore.acquire(); // try to acquire a permit
+                System.out.println(Thread.currentThread().getName() + " acquired permit");
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                semaphore.release(); // release the permit
+            }
+        }
+    }
+    ```
+
+#### Stamped Lock (StampedLock)
+
+`StampedLock` is part of `java.util.concurrent.locks`. It is designed to improve concurrency for **read-heavy scenarios**, especially where **optimistic**, **non-blocking reads can be used instead** of locking all readers.
+
+- Features of StampedLock
+    - Provides three modes of locking:
+        - Write Lock
+        - Read Lock
+        - Optimistic **Read** (**non-blocking**)
+    - Does **not support reentrancy** (unlike `ReentrantReadWriteLock`)
+    - Lock/unlock operations return and require a `long stamp` token.
+
+1. Write Lock: Exclusive access — only one thread can write at a time.
+
+    Example:
+    ```java
+    StampedLock lock = new StampedLock();
+    int data = 0;
+
+    public void writeData(int value) {
+        long stamp = lock.writeLock();  // acquire write lock
+        try {
+            data = value;
+        } finally {
+            lock.unlockWrite(stamp);    // release write lock
+        }
+    }
+    ```
+
+2. Read Lock: Shared access — multiple threads can read concurrently (but no writer allowed).
+
+    Example:
+    ```java
+    public int readData() {
+        long stamp = lock.readLock();   // acquire read lock
+        try {
+            return data;
+        } finally {
+            lock.unlockRead(stamp);     // release read lock
+        }
+    }
+    ```
+    - Here for both read and write `stamp` is need for versioning. It might not be necessary here but will be useful in optimistic lock.
+
+3. Optimistic Read: Non-blocking, **fast read** assuming no concurrent write occurs. Must **validate** afterward to ensure no write occurred during read.
+    
+    Example:
+    ```java
+    import java.util.concurrent.locks.StampedLock;
+
+    public class OptimisticReadExample {
+        private final StampedLock lock = new StampedLock();
+        private int x = 10;
+
+        // Optimistic read method
+        public int read() {
+            long stamp = lock.tryOptimisticRead(); // non-blocking read
+            int currentValue = x;                  // read shared data
+
+            // validate: true if no write occurred since the stamp
+            if (!lock.validate(stamp)) {
+                // fallback to blocking read lock
+                stamp = lock.readLock();
+                try {
+                    currentValue++;
+                } finally {
+                    lock.unlockRead(stamp);
+                }
+            }
+
+            return currentValue;
+        }
+
+        // Writer method
+        public void write(int newValue) {
+            long stamp = lock.writeLock();
+            try {
+                x = newValue;
+            } finally {
+                lock.unlockWrite(stamp);
+            }
+        }
+
+        public static void main(String[] args) {
+            OptimisticReadExample example = new OptimisticReadExample();
+
+            System.out.println("Value: " + example.read());  // Optimistically read
+            example.write(20);                              // Write value
+            System.out.println("Value: " + example.read());  // Read again
+        }
+    }
+    ```
+    - `tryOptimisticRead()` acquires a non-blocking read.
+    - `validate(stamp)` checks if a write occurred during the read.
+    - If invalid, it **falls back** to acquiring a proper read lock.
+    - Useful for **high-read/low-write** scenarios to improve throughput.
+
+⚠️ Important Notes
+- `StampedLock` is **not reentrant:** acquiring the same lock twice from the same thread causes deadlock.
+- Always validate the stamp when using **optimistic reads**.
+- Optimistic reads are useful when **writes are rare** and data consistency **can be confirmed after reading.**
+

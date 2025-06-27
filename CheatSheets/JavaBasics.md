@@ -218,18 +218,20 @@
 > f. [Synchronized and Thread Satety](#synchronized-and-thread-satety)<br>
 >> i. [Monitor Lock](#monitor-lock-aka-intrinsic-lock)<br>
 
-> g. [Inter-Thread Communication](#inter-thread-communication)<br>
->> i. [Spurious Wakeup](#spurious-wakeup)<br>
-
-> h. [Deprecated methods stop, resume, suspended](#deprecated-methods-stop-resume-suspended)<br>
-> i. [Thread Joining, thread Priority, deamon thread](#thread-joining-thread-priority-deamon-thread)<br>
-> j, [Locks and semaphores](#locks-and-semaphores)<br>
+> g. [Deprecated methods stop, resume, suspended](#deprecated-methods-stop-resume-suspended)<br>
+> h. [Thread Joining, thread Priority, deamon thread](#thread-joining-thread-priority-deamon-thread)<br>
+> i, [Locks and semaphores](#locks-and-semaphores)<br>
 >> i. [Optimistic Locking](#optimistic-locking)<br>
 >> ii. [Pessimistic Locking](#pessimistic-locking)<br>
 >> iii. [Reentrant Lock](#reentrant-lock-reentrantlock)<br>
 >> iv. [Read Write Lock](#read-write-lock-reentrantreadwritelock)<br>
 >> v. [Semaphore](#semaphore-semaphore)<br>
 >> vi. [Stamped Lock](#stamped-lock-stampedlock)<br>
+
+> j. [Inter-Thread Communication](#inter-thread-communication)<br>
+>> i. [Communication between synchronized blocks or methods](#communication-between-synchronized-blocks-or-methods)<br>
+>> ii. [Communication between lock interfaces](#communication-between-lock-interfaces)<br>
+>> ii. [Spurious Wakeup](#spurious-wakeup)<br>
 
 ## OOPS Concepts
 
@@ -5206,87 +5208,6 @@ The monitor lock is stored **within every object** in the JVM.
         inside task2 synchronised
         task2 ends
         ```
-### Inter-Thread Communication
-
-Inter-thread communication refers to the process where multiple threads coordinate with each other by sharing data and signaling when certain conditions are met, especially when they need to wait or notify each other.
-
-In multithreaded applications, threads often depend on each other's work.
-
-- Example:
-    - A consumer thread may need to wait until a producer thread produces data.
-    - Instead of **busy-waiting (looping infinitely)**, we use proper coordination via `wait()` and `notify()`.
-
-- Methods in `Object` Class:
-    | Method        | Description        |
-    | ------------- | ------------------------- |
-    | `wait()`      | Causes current thread to release lock and **enter waiting state** until another thread invokes `notify()`/`notifyAll()` |
-    | `notify()`    | Wakes up **one** thread waiting on the same object      |
-    | `notifyAll()` | Wakes up **all** threads waiting on the object          |
-
-    ⚠️ These methods must be called inside a **synchronized block or method**.
-
-- Communication Pattern:
-    ```java
-    synchronized(lock) {
-        while (!condition) {
-            lock.wait(); // wait until some thread changes the condition
-        }
-        // condition met, proceed
-    }
-
-    synchronized(lock) {
-        // change the condition
-        lock.notify(); // or lock.notifyAll()
-    }
-    ```
-- Example: Producer-Consumer
-
-    ```java
-    class Shared {
-        int data;
-        boolean produced = false;
-
-        synchronized void produce(int val) throws InterruptedException {
-            while (produced) wait();  // wait if data already produced
-
-            data = val;
-            produced = true;
-            System.out.println("Produced: " + val);
-            notifyAll(); // signal consumer
-        }
-
-        synchronized int consume() throws InterruptedException {
-            while (!produced) wait();  // wait for data
-
-            produced = false;
-            System.out.println("Consumed: " + data);
-            notifyAll(); // signal producer
-            return data;
-        }
-    }
-    ```
-
-#### Spurious Wakeup
-
-A **spurious wakeup** is when a thread that is waiting (via `wait()`) **wakes up without being notified** (`notify()` or `notifyAll()`).
-
-This can happen due to reasons like:
-- OS-level signals,
-- JVM optimizations,
-- race conditions.
-
-➡️ **Because of this, Java recommends always calling** `wait()` **inside a loop that checks** the condition we are waiting for.
-
-Example Pattern to Handle Spurious Wakeups:
-```java
-synchronized(lock) {
-    while (!condition) {
-        lock.wait();
-    }
-    // proceed when condition is met
-}
-```
-- Using `if (condition)` is **wrong** here — use `while`.
 
 ### Deprecated methods stop, resume, suspended
 
@@ -5599,3 +5520,233 @@ these lcoks don't depend on objects like synchronised method.
 - Always validate the stamp when using **optimistic reads**.
 - Optimistic reads are useful when **writes are rare** and data consistency **can be confirmed after reading.**
 
+### Inter-Thread Communication
+
+Inter-thread communication refers to the process where multiple threads coordinate with each other by sharing data and signaling when certain conditions are met, especially when they need to wait or notify each other.
+
+In multithreaded applications, threads often depend on each other's work.
+
+#### Communication between Synchronized blocks or methods
+- Example:
+    - A consumer thread may need to wait until a producer thread produces data.
+    - Instead of **busy-waiting (looping infinitely)**, we use proper coordination via `wait()` and `notify()`.
+
+- Methods in `Object` Class:
+    | Method        | Description        |
+    | ------------- | ------------------------- |
+    | `wait()`      | Causes current thread to release lock and **enter waiting state** until another thread invokes `notify()`/`notifyAll()` |
+    | `notify()`    | Wakes up **one** thread waiting on the same object      |
+    | `notifyAll()` | Wakes up **all** threads waiting on the object          |
+
+    ⚠️ These methods must be called inside a **synchronized block or method**.
+
+- Communication Pattern:
+    ```java
+    synchronized(lock) {
+        while (!condition) {
+            lock.wait(); // wait until some thread changes the condition
+        }
+        // condition met, proceed
+    }
+
+    synchronized(lock) {
+        // change the condition
+        lock.notify(); // or lock.notifyAll()
+    }
+    ```
+- Example: Producer-Consumer
+
+    ```java
+    class Shared {
+        int data;
+        boolean produced = false;
+
+        synchronized void produce(int val) throws InterruptedException {
+            while (produced) wait();  // wait if data already produced
+
+            data = val;
+            produced = true;
+            System.out.println("Produced: " + val);
+            notifyAll(); // signal consumer
+        }
+
+        synchronized int consume() throws InterruptedException {
+            while (!produced) wait();  // wait for data
+
+            produced = false;
+            System.out.println("Consumed: " + data);
+            notifyAll(); // signal producer
+            return data;
+        }
+    }
+    ```
+
+#### Communication between Lock interfaces
+
+Java provides thread communication via the `Condition` interface, which works in conjunction with a `Lock` (usually a `ReentrantLock`).
+
+**Key Methods:**
+| Method        | Description                                                                |
+| ------------- | -------------------------------------------------------------------------- |
+| `await()`     | Causes the current thread to **wait** until it is signaled or interrupted. |
+| `signal()`    | **Wakes up one** waiting thread.                                           |
+| `signalAll()` | **Wakes up all** waiting threads.                                          |
+
+These are similar in intent to `wait()` and `notify()` from Object, but `await()/signal()` offer more control and are used with `Lock`.
+
+- Example1:
+
+    Scenario:
+    - A **customer** (**Thread A**) enters a shop and **waits for the coffee to be prepared**.
+    - The **barista** (**Thread B**) prepares the coffee and **signals the customer** once it’s ready.
+
+    ```java
+    import java.util.concurrent.locks.*;
+
+    public class CoffeeShop {
+        private final Lock lock = new ReentrantLock();
+        private final Condition coffeeReady = lock.newCondition();
+        private boolean isReady = false;
+
+        // Customer waits for coffee
+        public void customer() {
+            lock.lock();
+            try {
+                while (!isReady) {
+                    System.out.println("Customer: Waiting for coffee...");
+                    coffeeReady.await(); // wait until signaled
+                }
+                System.out.println("Customer: Got the coffee, leaving shop!");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        // Barista prepares and signals
+        public void barista() {
+            lock.lock();
+            try {
+                System.out.println("Barista: Preparing coffee...");
+                Thread.sleep(2000); // simulate preparation
+                isReady = true;
+                System.out.println("Barista: Coffee ready!");
+                coffeeReady.signal(); // notify waiting customer
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public static void main(String[] args) {
+            CoffeeShop shop = new CoffeeShop();
+
+            Thread customer = new Thread(shop::customer);
+            Thread barista = new Thread(shop::barista);
+
+            customer.start();
+            barista.start();
+        }
+    }
+    ```
+    - `signal()` or `signalAll()` must be called while holding the same lock.
+    - `customer()` uses `await()` to wait until isReady == true.
+    - `barista()` sets `isReady = true` and calls `signal()` to wake up the waiting customer.
+    - `await()` releases the lock temporarily, and `signal()` reacquires it for safe coordination.
+
+- Example2:
+
+    **Scenario:** Printing even and odd numbers using two threads
+    - One thread prints **even** numbers.
+    - Another thread prints **odd** numbers.
+    - They coordinate using **two different** `Condition` objects.
+
+    Example:
+    ```java
+    import java.util.concurrent.locks.*;
+
+    public class EvenOddPrinter {
+        private final Lock lock = new ReentrantLock();
+        private final Condition evenTurn = lock.newCondition();
+        private final Condition oddTurn = lock.newCondition();
+        private int number = 1;
+        private final int MAX = 10;
+
+        public void printEven() {
+            lock.lock();
+            try {
+                while (number <= MAX) {
+                    if (number % 2 != 0) {
+                        evenTurn.await();  // wait until it's even's turn
+                    }
+                    if (number <= MAX) {
+                        System.out.println("Even: " + number);
+                        number++;
+                        oddTurn.signal();  // signal odd thread
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void printOdd() {
+            lock.lock();
+            try {
+                while (number <= MAX) {
+                    if (number % 2 == 0) {
+                        oddTurn.await();  // wait until it's odd's turn
+                    }
+                    if (number <= MAX) {
+                        System.out.println("Odd: " + number);
+                        number++;
+                        evenTurn.signal();  // signal even thread
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public static void main(String[] args) {
+            EvenOddPrinter printer = new EvenOddPrinter();
+
+            Thread evenThread = new Thread(printer::printEven);
+            Thread oddThread = new Thread(printer::printOdd);
+
+            evenThread.start();
+            oddThread.start();
+        }
+    }
+    ```
+    - Two conditions: `evenTurn` and `oddTurn`, one for each thread.
+    - Each thread waits on **its own condition** and signals the other thread’s condition.
+    - This demonstrates how **multiple conditions** under the same lock can **coordinate multiple wait conditions cleanly.**
+
+#### Spurious Wakeup
+
+A **spurious wakeup** is when a thread that is waiting (via `wait()` or `await()`) **wakes up without being notified** (`notify()`, `notifyAll()`, `signal()` or `signalAll()`).
+
+This can happen due to reasons like:
+- OS-level signals,
+- JVM optimizations,
+- race conditions.
+
+➡️ **Because of this, Java recommends always calling** `wait()` **inside a loop that checks** the condition we are waiting for.
+
+Example Pattern to Handle Spurious Wakeups:
+```java
+synchronized(lock) {
+    while (!condition) {
+        lock.wait();
+    }
+    // proceed when condition is met
+}
+```
+- Using `if (condition)` is **wrong** here — use `while`.

@@ -100,7 +100,7 @@
 
 >> ii. [Static Inner Class](#static-nested-class)<br>
 
-> e. [Generic Class]()<br>
+> e. [Generic Class](#generic)<br>
 >> i. [Multiple Type Parameters](#generic-class-with-multiple-type-parameters)<br>
 >> ii. [Bounded Type Parameters](#bounded-type-parameters)<br>
 >> iii. [Generic Class inheritance with interface and class](#generic-class-inheritance-with-interface-and-class)<br>
@@ -233,6 +233,10 @@
 >> ii. [Communication between lock interfaces](#communication-between-lock-interfaces)<br>
 >> ii. [Spurious Wakeup](#spurious-wakeup)<br>
 
+> l. [Lock free Mechanishm](#lock-free-mechanism-for-concurrency) <br>
+>> i. [Java Support for Cas](#java-support-for-cas) <br>
+>> ii. [ABA Problem in Cas](#aba-problem-in-cas)<br>
+>> iii. [Volatile vs Atomic](#volatile-vs-atomic)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -2137,7 +2141,7 @@ public class Main {
 
 ### Generic
 
-- A **Generic class** in Java allows you to define a class with a type parameter (or multiple parameters). It enables **type-safe code** and avoids the need for casting when retrieving data from objects like collections.
+- A **Generic class** in Java allows us to define a class with a type parameter (or multiple parameters). It enables **type-safe code** and avoids the need for casting when retrieving data from objects like collections.
 - Generic don't work with primitive types.
 - Why Use Generics?
     - Ensures compile-time type safety and reduces ClassCastException.
@@ -5473,23 +5477,24 @@ these lcoks don't depend on objects like synchronised method.
         private int x = 10;
 
         // Optimistic read method
-        public int read() {
-            long stamp = lock.tryOptimisticRead(); // non-blocking read
+        public int readAndPossiblyWrite() {
+            long stamp = lock.tryOptimisticRead(); // non-blocking optimistic read
             int currentValue = x;                  // read shared data
 
-            // validate: true if no write occurred since the stamp
+            // validate: true if no write occurred since optimistic stamp
             if (!lock.validate(stamp)) {
-                // fallback to blocking read lock
-                stamp = lock.readLock();
+                // fallback to exclusive write lock
+                stamp = lock.writeLock();
                 try {
-                    currentValue++;
+                    currentValue = ++x; // safely write to the shared resource
                 } finally {
-                    lock.unlockRead(stamp);
+                    lock.unlockWrite(stamp);
                 }
             }
 
             return currentValue;
         }
+
 
         // Writer method
         public void write(int newValue) {
@@ -5750,3 +5755,123 @@ synchronized(lock) {
 }
 ```
 - Using `if (condition)` is **wrong** here — use `while`.
+
+### Lock Free Mechanism for concurrency
+
+**CAS (Compare-And-Swap)** is a **lock-free, low level atomic operation** used in concurrent programming to achieve thread-safe updates without using traditional synchronization mechanisms like `synchronized` blocks or explicit locks.
+
+- How CAS Works
+
+    CAS works on three operands:
+    1. **Memory location (V)** – the variable to update.
+    2. **Expected value (A)** – the value we expect the variable to have before update.
+    3. **New value (B)** – the value we want to set.
+
+    If the current value of `V` equals `A`, then update `V` to `B`; otherwise, do nothing. So the operations becomes - 
+    1. Load/Read variable from memory
+    2. Compare memory data with the expected value.
+    3. If both are same update memory with the new value otherwise do nothing. 
+    Thats why its known as compare and swap. 
+
+#### Java Support for CAS
+
+Java provides CAS through classes in the `java.util.concurrent.atomic` package, such as:
+- `AtomicInteger`
+- `AtomicLong`
+- `AtomicReference`
+- `AtomicBoolean`
+
+Internally, these use **native CPU instructions** (like `LOCK CMPXCHG` on x86) via **Unsafe operations** or the **VarHandle API** (Java 9+).
+
+Example: CAS with AtomicInteger
+```java
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Counter {
+    private final AtomicInteger count = new AtomicInteger(0);
+
+    public void increment() {
+        int oldValue, newValue;
+        do {
+            oldValue = count.get();
+            newValue = oldValue + 1;
+        } while (!count.compareAndSet(oldValue, newValue)); // CAS loop
+    }
+
+    public int getValue() {
+        return count.get();
+    }
+}
+```
+
+#### ABA Problem in CAS
+
+The **ABA problem** is a concurrency issue in **CAS (Compare-And-Swap)** operations where **a value changes from A to B and back to A** — and **CAS fails** to detect that a change occurred.
+
+- **Problem Scenario (ABA)**
+
+    CAS is an atomic operation that does:
+    ```java
+    if (current_value == expected_value) {
+        current_value = new_value;
+    }
+    ```
+    Imagine this:
+    - Thread T1 reads value `A` from a shared variable.
+    - Thread T2 changes it: `A -> B -> A`.
+    - Thread T1 performs CAS with expected `A`, and it succeeds, even though the value was changed temporarily.
+        ```java
+        AtomicReference<String> atomicRef = new AtomicReference<>("A");
+
+        Thread t1 = new Thread(() -> {
+            String val = atomicRef.get(); // reads "A"
+            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+            atomicRef.compareAndSet(val, "C"); // succeeds, but state may have changed in between
+        });
+
+        Thread t2 = new Thread(() -> {
+            atomicRef.compareAndSet("A", "B");
+            atomicRef.compareAndSet("B", "A"); // now value is "A" again
+        });
+
+        t1.start(); t2.start();
+        ```
+
+    ➡️ T1 is unaware that the value changed and might act on stale state, leading to inconsistencies.
+
+- **Why It Matters**
+    - CAS only checks if the value is equal — **not whether it was changed in between.**
+    - This is dangerous **in lock-free algorithms**, especially with **shared memory structures** (e.g., stacks, queues).
+
+- **Solution: Use a Versioned Reference**
+    
+    Java provides `AtomicStampedReference` and `AtomicMarkableReference` to address this:
+    - `AtomicStampedReference`
+        
+        This uses a **value + stamp (version)** combo.
+        ```java
+        AtomicStampedReference<String> ref = new AtomicStampedReference<>("A", 0);
+
+        int[] stampHolder = new int[1];
+        String val = ref.get(stampHolder); // get value and version
+
+        // Later: CAS with value AND stamp
+        boolean success = ref.compareAndSet(val, "C", stampHolder[0], stampHolder[0] + 1);
+        ```
+        ✅ This ensures that the update only happens if value and version match, solving the ABA issue.
+
+### Volatile vs Atomic
+
+| Feature / Aspect | `volatile`  | `Atomic` Classes (e.g., `AtomicInteger`) |
+| -------------- | --------------- | ----------------- |
+| **Type** | Keyword  | Part of `java.util.concurrent.atomic` package    |
+| **Purpose**  | Ensures visibility of changes to variables    and ensures read/write happens from memory not from cache       | Provides **atomic operations** on variables      |
+| **Thread-Safety**                   | ✅ Visibility only; ❌ Not atomic for compound actions | ✅ Thread-safe and atomic for read-modify-write operations      |
+| **Use Case**                        | Simple flags, state indicators                       | Counters, sequence generators, CAS operations                  |
+| **Memory Visibility**               | ✅ Yes (happens-before guarantee)                     | ✅ Yes                                                          |
+| **Atomicity**                       | ❌ No — must be combined with synchronization         | ✅ Yes — methods like `incrementAndGet()` are atomic            |
+| **CAS Support (Compare-And-Swap)**  | ❌ No                                                 | ✅ Yes — built-in (non-blocking) CAS                            |
+| **Compound Operations (e.g., i++)** | ❌ Unsafe (race conditions)                           | ✅ Safe (atomic methods handle this internally)                 |
+| **Performance**                     | 🔼 Very fast (just ensures memory visibility)        | 🔼 Fast, but slightly more overhead due to atomicity mechanism |
+| **Lock-Free**                       | ❌ Needs external locking for safety                  | ✅ Lock-free, non-blocking concurrency                          |
+| **Common Classes/Types**            | Primitive types (`int`, `boolean`, etc.)             | `AtomicInteger`, `AtomicLong`, `AtomicReference`, etc.         |

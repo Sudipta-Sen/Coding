@@ -237,6 +237,10 @@
 >> i. [Java Support for Cas](#java-support-for-cas) <br>
 >> ii. [ABA Problem in Cas](#aba-problem-in-cas)<br>
 >> iii. [Volatile vs Atomic](#volatile-vs-atomic)<br>
+
+> m. [Threadpool](#threadpool)<br>
+>> i. [ThreadPoolExecutor](#threadpoolexecutor)<br>
+>> ii. [Determining optimal thread pool size](#determining-optimal-thread-pool-size)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -5860,7 +5864,7 @@ The **ABA problem** is a concurrency issue in **CAS (Compare-And-Swap)** operati
         ```
         ✅ This ensures that the update only happens if value and version match, solving the ABA issue.
 
-### Volatile vs Atomic
+#### Volatile vs Atomic
 
 | Feature / Aspect | `volatile`  | `Atomic` Classes (e.g., `AtomicInteger`) |
 | -------------- | --------------- | ----------------- |
@@ -5875,3 +5879,332 @@ The **ABA problem** is a concurrency issue in **CAS (Compare-And-Swap)** operati
 | **Performance**                     | 🔼 Very fast (just ensures memory visibility)        | 🔼 Fast, but slightly more overhead due to atomicity mechanism |
 | **Lock-Free**                       | ❌ Needs external locking for safety                  | ✅ Lock-free, non-blocking concurrency                          |
 | **Common Classes/Types**            | Primitive types (`int`, `boolean`, etc.)             | `AtomicInteger`, `AtomicLong`, `AtomicReference`, etc.         |
+
+### ThreadPool
+
+A ThreadPool is a pool (collection) of pre-instantiated, reusable threads. Rather than creating a new thread for each task, Java employs a set of worker threads that execute tasks concurrently.
+
+Once a task completes, the worker thread returns to the pool and waits for another task. This model significantly improves system performance, optimizes resource usage, and eliminates the overhead of managing individual thread lifecycles.
+
+- Advantages of Using ThreadPool
+    - **Thread Reuse:** Saves time by reusing existing threads instead of creating new ones for each task.
+    - **Simplified Lifecycle Management:** Abstracts and manages thread lifecycle internally.
+    - **Reduced Context Switching:** Controls thread creation, thereby minimizing CPU time wasted on context switching.
+    - **Improved Performance and Scalability:** Enables concurrent execution with efficient resource management.
+
+- Core Components:
+    Java provides the Executor Framework in the `java.util.concurrent` package to manage thread pools efficiently.
+
+    ![](Snippets/threadpool-1.png)
+
+    - **Executor:** Basic interface with a single method `execute`(Runnable command).
+    - **ExecutorService:** Extends Executor, offering richer control with methods like `submit()`, `shutdown()`, `awaitTermination()`, etc.
+    - **ThreadPoolExecutor:** The core implementation class that allows full customization of thread pool behavior.
+    ```java
+    ExecutorService executor = Executors.newFixedThreadPool(5);
+    executor.execute(() -> {
+        // task logic here
+    });
+    executor.shutdown();
+    ```
+
+#### ThreadPoolExecutor
+
+- Execution Flow
+    - When a new task arrives, the executor checks if an idle thread is available.
+    - If a thread is free, it is assigned the task immediately.
+    - If all threads are busy, the task is added to the work queue.
+    -   When a thread completes its current task, it returns to the pool and checks the queue. If a task is waiting, it picks it up for execution.
+
+- Syntax
+    ```java
+    public ThreadPoolExecutor(
+        int corePoolSize,
+        int maximumPoolSize,
+        long keepAliveTime,
+        TimeUnit unit,
+        BlockingQueue<Runnable> workQueue,
+        ThreadFactory threadFactory,
+        RejectedExecutionHandler handler
+    )
+    ```
+
+    Parameter breakdown
+
+    | Parameter    | Type    | Description    |
+    | ---------- | ----- | ---------------------------- |
+    | `corePoolSize`    | `int`                      | Minimum number of threads to **keep alive** in the pool, even if idle.                     |
+    | `maximumPoolSize` | `int`                      | Maximum number of threads allowed in the pool.                                 |
+    | `keepAliveTime`   | `long`                     | Time a thread can remain idle before being terminated (if above corePoolSize). |
+    | `unit`            | `TimeUnit`                 | Unit of `keepAliveTime` (e.g., `TimeUnit.SECONDS`, `MILLISECONDS`).            |
+    | `workQueue`       | `BlockingQueue<Runnable>`  | Queue used to hold tasks before they are executed. This can be bounded or unbounded |
+    | `threadFactory`   | `ThreadFactory`            | Factory to create new threads. Useful for naming, priority, deamon thread etc.               |
+    | `handler`         | `RejectedExecutionHandler` | Policy to handle tasks when the queue is full and pool is at max size.         |
+
+- ThreadPool Execution Flow with corePoolSize and maximumPoolSize
+    - Initial tasks are assigned directly to idle core threads (up to `corePoolSize`).
+    - When all the core threads are busy new tasks are queued in the task queue (if space is available).
+    - If the queue is full and core threads are all busy, new threads are created beyond the core pool (up to `maximumPoolSize`) and the new task is assigned to that new thread.
+    - If both the queue is full and the total number of threads equals `maximumPoolSize`, the new task is rejected using the specified `RejectedExecutionHandler`
+    - Example:
+        ```java
+        corePoolSize = 2
+        maximumPoolSize = 4
+        workQueue capacity = 2
+        ```
+         Execution Timeline
+        | Task # | Threads in Use | Queue Size | Action Taken            |
+        | ------ | -------------- | ---------- | ----------------------- |
+        | 1      | 1              | 0          | Assigned to core thread |
+        | 2      | 2              | 0          | Assigned to core thread |
+        | 3      | 2              | 1          | Added to queue          |
+        | 4      | 2              | 2          | Added to queue          |
+        | 5      | 3              | 2 (full)   | New thread created      |
+        | 6      | 4              | 2 (full)   | New thread created      |
+        | 7      | 4 (max)        | 2 (full)   | ❌ Rejected             |
+
+- Core vs Non-Core Threads
+    - Core Threds- 
+        - Defined by the corePoolSize parameter.
+        - These threads are always kept alive (unless allowCoreThreadTimeOut(true) is set).
+        - When a new task is submitted:
+            - If the number of running threads is less than corePoolSize, a new core thread is created to handle the task, even if there are idle threads in the queue.
+    - Non-Core Threads
+        - Created only when:
+        - All core threads are busy, and
+        - The task queue is full, and
+        - The current thread count is less than maximumPoolSize.
+        - These threads are temporary and will be terminated if they remain idle for more than keepAliveTime.
+
+- `RejectedExecutionHandler` 
+
+    It is a strategy interface used to handle tasks that cannot be executed when the thread pool reaches its capacity limits.
+
+    Task rejection happens when both conditions are met:
+    - The number of active threads has reached `maximumPoolSize`, and
+    - The task queue is full.
+
+    Method Signature
+    ```java
+    void rejectedExecution(Runnable r, ThreadPoolExecutor executor);
+    ```
+    Whenever a task is rejected, this method is invoked, allowing the executor to delegate handling based on a specified strategy.
+
+    Java provides 4 built-in policies in the `java.util.concurrent.ThreadPoolExecutor` 
+    
+    1. AbortPolicy (Default)
+        - Throws a RejectedExecutionException.
+        - Prevents silent failure of task submission.
+            ```java
+            new ThreadPoolExecutor.AbortPolicy();
+            ```
+        Use case: When we want the system to fail fast and be notified about task rejection.
+    2. CallerRunsPolicy
+        - Runs the rejected task in the calling thread (i.e., the thread that submitted the task).
+        - Helps provide backpressure to the submitter.
+            ```java
+            new ThreadPoolExecutor.CallerRunsPolicy();
+            ```
+        Use case: When we want to slow down task submission but ensure execution.
+    3. DiscardPolicy
+        - Silently discards the rejected task.
+        - No exception is thrown, no feedback is provided.
+            ```java
+            new ThreadPoolExecutor.DiscardPolicy();
+            ```
+    4. DiscardOldestPolicy
+        - Discards the oldest unhandled task in the queue, and retries executing the new task.
+            ```java
+            new ThreadPoolExecutor.DiscardOldestPolicy();
+            ```
+        Use case: Real-time systems where latest data is more important than older data (e.g., log processing, sensor data).
+    
+    Example:
+    ```java
+    ExecutorService executor = new ThreadPoolExecutor(
+        2,
+        2,
+        10,
+        TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(2),
+        Executors.defaultThreadFactory(),
+        new ThreadPoolExecutor.CallerRunsPolicy()
+    );
+    ```
+- allowCoreThreadTimeOut(boolean value)
+    This method allows core threads to time out and terminate if they remain idle longer than keepAliveTime, just like non-core threads.
+
+    - By default:
+        - Core threads never time out, even when idle.
+        - Only threads beyond the core pool are terminated if idle.
+    - If we set corePoolSize == maximumPoolSize, and also enable core timeout, then all threads are eligible for timeout.
+    ```java
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        2,                      // corePoolSize
+        4,                      // maximumPoolSize
+        30,                     // keepAliveTime
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>()
+    );
+
+    // Allow core threads to time out
+    executor.allowCoreThreadTimeOut(true);
+    ```
+
+- ThreadPoolExecutor States
+
+    The states are represented by a combination of run state and worker count, managed using an internal `ctl` variable (an `AtomicInteger`). The run state governs whether the pool accepts new tasks or processes queued tasks.
+
+    State Transitions
+    ```text
+    NEW --> RUNNING --> SHUTDOWN --> STOP --> TIDYING --> TERMINATED
+    ```
+    1. RUNNING
+        - Default state after construction
+        - Accepts new tasks and processes queued tasks
+        - Created when you call `new ThreadPoolExecutor(...)` or use Executors factory methods
+        - Typical Usage: ThreadPool is actively running and accepting tasks.
+    
+    2. SHUTDOWN
+        - Initiated by calling `shutdown()`
+        - **No new tasks are accepted**, but existing queued and active tasks are allowed to complete
+            ```java
+            executor.shutdown();
+            ```
+        - Used for graceful shutdown: the pool completes in-flight tasks before terminating.
+    
+    3. STOP
+        - Triggered by shutdownNow()
+        - No new tasks are accepted, and in-progress tasks are interrupted
+        - All waiting tasks in the queue are discarded
+            ```java
+            executor.shutdownNow();
+            ```
+        - Used for immediate shutdown in critical situations.
+    4. TIDYING
+        - All tasks have terminated, and the worker count is zero
+        - The pool is now transitioning to `TERMINATED`
+        - `terminated()` hook method is called (can be overridden)
+
+    5. TERMINATED
+        - The final state
+        - Executor is completely shut down, no tasks are running or queued
+    
+    The internal state is encoded in the higher bits of an `AtomicInteger` (`ctl`), while the lower bits represent the worker thread count.
+
+    We generally don’t need to manage these states manually—they’re handled internally by `ThreadPoolExecutor`.
+
+Example:
+```java
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+// Custom ThreadFactory class
+class CustomThreadFactory implements ThreadFactory {
+    private final AtomicInteger threadCount = new AtomicInteger(1);
+    private final String namePrefix;
+
+    public CustomThreadFactory(String prefix) {
+        this.namePrefix = prefix;
+    }
+
+    @Override
+    public Thread newThread(Runnable r) {
+        Thread t = new Thread(r);
+        t.setName(namePrefix + "-Thread-" + threadCount.getAndIncrement());
+        return t;
+    }
+}
+
+public class Main {
+
+    public static void main(String[] args) {
+        int corePoolSize = 2;
+        int maximumPoolSize = 4;
+        int queueCapacity = 3;
+        long keepAliveTime = 10;
+
+        // Instantiate the custom thread factory
+        ThreadFactory threadFactory = new CustomThreadFactory("Worker");
+
+        // Blocking queue of capacity 3
+        BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(queueCapacity);
+
+        // ThreadPoolExecutor setup
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                corePoolSize,
+                maximumPoolSize,
+                keepAliveTime,
+                TimeUnit.SECONDS,
+                workQueue,
+                threadFactory,
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        // Submitting 4 tasks
+        for (int i = 1; i <= 4; i++) {
+            final int taskId = i;
+            executor.submit(() -> {
+                try {
+                    Thread.sleep(5000); // Simulate time-consuming work
+                    System.out.println("Task " + taskId + " executed by " + Thread.currentThread().getName());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        executor.shutdown();
+    }
+}
+```
+Output:
+```bash
+Task 1 executed by Worker-Thread-1
+Task 2 executed by Worker-Thread-2
+Task 4 executed by Worker-Thread-1
+Task 3 executed by Worker-Thread-2
+```
+
+#### Determining optimal thread pool size
+
+1. CPU-Bound Tasks
+    - Tasks that use significant CPU time (e.g., computations, data processing).
+    - Goal: Avoid excessive context switching and CPU contention.
+        ```text
+        Optimal Threads ≈ Number of CPU Cores + 1
+        ```
+    - Example:
+        If your system has 8 logical cores:
+        ```text
+        Thread Pool Size ≈ 8 or 9
+        ```
+2. IO-Bound Tasks
+    - Tasks that spend time waiting (e.g., network calls, file IO, DB queries).
+    - Goal: Have enough threads to keep CPU busy while some threads are waiting on IO.
+        ```text
+        Optimal Threads ≈ Number of Cores × (1 + Wait Time / Compute Time)
+        ```
+    - Example:
+        If 70% of task time is spent waiting:
+        ```text
+        Thread Pool Size ≈ Number of Cores × (1 + 0.7 / 0.3) ≈ Cores × ~3.33
+        ```
+3. Benchmarking and Profiling
+    Theoretical formulas give a starting point, but benchmarking under realistic workloads is critical. Use:
+    - JMH (Java Microbenchmarking Harness) for measuring execution time.
+    - VisualVM / JConsole for monitoring CPU and thread utilization.
+    - ThreadPoolExecutor metrics (getPoolSize(), getActiveCount(), etc.)
+
+4. Constraints to Consider
+    | Factor    | Impact on Thread Size Decision                |
+    | --------- | --------------------------------------------- |
+    | Available memory (RAM) | Too many threads increase stack usage      |
+    | Response time requirements   | Real-time systems may need lower thread count |
+    | Task execution time variance | High variance may justify larger thread pool  |
+    | Rejection handling policy    | Defines behavior when pool and queue are full |
+    | **JVM Heap Size** (`-Xmx`)     | Total Java heap available for application data |
+    | **Thread Stack Size** (`-Xss`) | Memory allocated per thread                    |
+    | **GC Behavior**                | More threads ⇒ more GC pressure                |
+    | **Response Time**              | SLAs or low-latency requirements               |
+

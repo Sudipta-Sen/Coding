@@ -241,6 +241,11 @@
 > m. [Threadpool](#threadpool)<br>
 >> i. [ThreadPoolExecutor](#threadpoolexecutor)<br>
 >> ii. [Determining optimal thread pool size](#determining-optimal-thread-pool-size)<br>
+>> iii.. [Executors](#executors)<br>
+>> iv.. [Future](#future)<br>
+>> v. [Callable](#callable)<br>
+>> vi. [Completablefuture](#completablefuture)<br>
+
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -6207,4 +6212,329 @@ Task 3 executed by Worker-Thread-2
     | **Thread Stack Size** (`-Xss`) | Memory allocated per thread                    |
     | **GC Behavior**                | More threads ⇒ more GC pressure                |
     | **Response Time**              | SLAs or low-latency requirements               |
+
+#### Executors
+
+Executors is a **final utility class** provided in the `java.util.concurrent` that simplifies the creation of thread pools and executor services, making it easier to manage thread-based tasks in concurrent applications.
+
+- Common Factory Methods
+    | Method   | Description        |
+    | -------- | ------------------ |
+    | `Executors.newSingleThreadExecutor()`         | Creates an executor with a single worker thread.  |
+    | `Executors.newFixedThreadPool(int n)`         | Creates a thread pool with a fixed number of threads.  |
+    | `Executors.newCachedThreadPool()`             | Creates a thread pool that creates new threads as needed and reuses previously constructed threads. |
+    | `Executors.newScheduledThreadPool(int n)`     | Creates a thread pool that can schedule commands to run after a delay or periodically.  |
+    | `Executors.newWorkStealingPool()` *(Java 8+)* | Creates a pool using work-stealing algorithm for parallelism.  |
+
+- Behind the Scenes
+
+    All methods in `Executors` internally create instances of `ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`, etc., with preconfigured parameters.
+    
+    For Example:
+    ```java
+    Executors.newFixedThreadPool(4);
+    ```
+    Internally creates:
+    ```java
+    new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+    ```
+
+    Although `Executors` is convenient, it's often better to use `ThreadPoolExecutor` directly in production code for more fine-grained control (e.g., custom thread factory, rejection policy, etc.).
+
+#### Future
+
+The `Future<T>` interface represents the result of an **asynchronous computation** submitted to an executor. It acts as a **placeholder** for a result that may become available at some point in the future.
+
+We use future when we submit a task using methods like:
+```java
+Future<T> future = executor.submit(Callable<T> task);
+```
+or
+```java
+Future<?> future = executor.submit(Runnable task, T result);
+```
+
+or
+```java
+Future<?> future = executor.submit(Runnable task);
+```
+
+the executor immediately returns a `Future` object. The actual task executes asynchronously.
+
+-  Key Methods in `Future`
+    | Method     | Description                |
+    | ---------- | -------------------------- |
+    | `T get()`    | Blocks until the result is available or throws an exception  |
+    | `T get(long timeout, TimeUnit unit)` | Waits up to the given timeout for the result  |
+    | `boolean cancel(boolean mayInterruptIfRunning)` | <ul><li>Attempts to cancel the task.</li> <li>Return false if task can't be cancelled (typically beacuse task already completed), returns true otherwise</li></ul> |
+    | `boolean isDone()`   | Returns `true` if the task is completed. Completion may be due to normal termination, any exception or cancellation-- any ot this cases, this method will return true.  |
+    | `boolean isCancelled()`   | Returns `true` if the task was cancelled before it completed |
+
+- Example: Using Future with ThreadPoolExecutor
+    ```java
+    import java.util.concurrent.*;
+    import java.util.*;
+
+    // Custom thread factory for naming threads
+    class CustomThreadFactory implements ThreadFactory {
+        private final String baseName;
+        private int counter = 0;
+
+        public CustomThreadFactory(String baseName) {
+            this.baseName = baseName;
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, baseName + "-Thread-" + counter++);
+        }
+    }
+
+    public class Main {
+
+        public static void main(String[] args) {
+            int corePoolSize = 2;
+            int maximumPoolSize = 4;
+            int queueCapacity = 3;
+            long keepAliveTime = 10;
+
+            ThreadFactory threadFactory = new CustomThreadFactory("Worker");
+            BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(queueCapacity);
+
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                    corePoolSize,
+                    maximumPoolSize,
+                    keepAliveTime,
+                    TimeUnit.SECONDS,
+                    workQueue,
+                    threadFactory,
+                    new ThreadPoolExecutor.AbortPolicy()
+            );
+
+            List<Future<String>> futures = new ArrayList<>();
+
+            // ---- Method 1: Lambda Runnable with result ----
+            for (int i = 1; i <= 2; i++) {
+                final int taskId = i;
+                Future<String> future = executor.submit(() -> {
+                    try {
+                        Thread.sleep(3000);
+                        System.out.println("Lambda Task " + taskId + " run by " + Thread.currentThread().getName());
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.out.println("Lambda Task " + taskId + " interrupted.");
+                    }
+                }, "LambdaResult-" + taskId); // Predefined result
+                futures.add(future);
+            }
+
+            // ---- Method 2: Reusable Runnable with result ----
+            for (int i = 3; i <= 4; i++) {
+                int taskId = i;
+                Runnable task = () -> {
+                    try {
+                        Thread.sleep(3000);
+                        System.out.println("Method Task " + taskId + " run by " + Thread.currentThread().getName());
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.out.println("Method Task " + taskId + " interrupted.");
+                    }
+                };
+                Future<String> future = executor.submit(task, "MethodResult-" + i);
+                futures.add(future);
+            }
+
+            // Wait for completion
+            for (int i = 0; i < futures.size(); i++) {
+                try {
+                    String result = futures.get(i).get();
+                    System.out.println("Task " + (i + 1) + " returned: " + result);
+                } catch (InterruptedException | ExecutionException e) {
+                    System.err.println("Task " + (i + 1) + " failed: " + e.getMessage());
+                }
+            }
+
+            executor.shutdown();
+        }
+    }
+    ```
+
+#### Callable
+
+`Callable` is an interface present in `java.util.concurrent` package.
+
+Key Features:
+- Represents a task that returns a result and may throw a checked exception.
+- Used in conjunction with ExecutorService or ThreadPoolExecutor to submit tasks and obtain results via Future<T>.
+- Its method:
+    ```java
+    V call() throws Exception;
+    ```
+- Example:
+    ```java
+    import java.util.concurrent.*;
+    import java.util.*;
+
+    public class CallableSubmissionExample {
+
+        public static void main(String[] args) throws InterruptedException, ExecutionException {
+
+            // Step 1: Create a bounded queue and thread pool executor
+            BlockingQueue<Runnable> taskQueue = new ArrayBlockingQueue<>(10);
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                    2,                          // core threads
+                    4,                          // max threads
+                    60, TimeUnit.SECONDS,       // keep-alive time
+                    taskQueue                   // work queue
+            );
+
+            List<Future<String>> futures = new ArrayList<>();
+
+            // ----- Method 1: Submit Callable using Lambda -----
+            for (int i = 1; i <= 2; i++) {
+                int taskId = i;
+
+                //  This will create a callable object as returning a value
+                futures.add(executor.submit(() -> {
+                    Thread.sleep(2000);
+                    return "Lambda Task " + taskId + " executed by " + Thread.currentThread().getName();
+                }));
+            }
+
+            // ----- Method 2: Submit Callable using Separate Method -----
+            for (int i = 3; i <= 4; i++) {
+                futures.add(executor.submit(createTask(i)));
+            }
+
+            // Retrieve and print results
+            for (Future<String> future : futures) {
+                System.out.println(future.get()); // blocks until result is available
+            }
+
+            executor.shutdown();
+        }
+
+        // Method returning Callable<String>
+        public static Callable<String> createTask(int taskId) {
+            return () -> {
+                Thread.sleep(2000);
+                return "Method Task " + taskId + " executed by " + Thread.currentThread().getName();
+            };
+        }
+    }
+    ```
+
+-  Runnable vs Callable
+    | Feature       | Runnable  | Callable      |
+    | ----------- | ----------- | ------------------- |
+    | Return Value    | Cannot return a result   | Can return a result via `Future` |
+    | Exception Handling       | Cannot throw checked exceptions | Can throw checked exceptions |
+    | Functional Method        | `void run()`  | `V call() throws Exception` |
+    | Submission with Executor | `submit(Runnable)` | `submit(Callable<T>)`  |
+    | Used With                | `Thread`, `ExecutorService`     | `ExecutorService`, `ThreadPoolExecutor`  |
+    | Suitable For             | Fire-and-forget tasks           | Result-producing or exception-sensitive tasks |
+
+#### CompletableFuture
+
+`CompletableFuture` is a class under the `java.util.concurrent` package that represents a **future result of an asynchronous computation**. It enhances the traditional `Future` interface by enabling **non-blocking, composable, and asynchronous** programming models—critical for modern multi-threaded applications.
+
+1. Creating Futures
+
+    | Method        | Description                |
+    | ------------- | --------------------- |
+    | `CompletableFuture.runAsync(Runnable task)`                    | Runs a task asynchronously (no result returned). |
+    | `CompletableFuture.runAsync(Runnable task, Executor executor)` | Same as above, but with custom thread pool.      |
+    | `CompletableFuture.supplyAsync(Supplier<T> supplier)`          | Runs `supplier` in separate thread asynchronously that returns a value. |
+    | `CompletableFuture.supplyAsync(Supplier<T>, Executor)`         | Same as above, but with custom thread pool.   By default it uses shared **Fork-Join Pool** executor  |
+    | `thenCompose(Function<T, CompletableFuture<R>>)` | **Flattens** a future that returns another future. Used for dependent async calls. Garunteed order completion |
+    |`thenComposeAsync(Function<T, CompletableFuture<R>>)`| Same as above but runs next step asynchronously. |
+
+2. Chaining and Transforming
+
+    | Method  | Description         |
+    | -------- | ---------------- |
+    | `thenApply(Function<T, U>)` | <ul><li>Apply function to the result of previous computation</li><li>Transforms the result of a future (sync).</li><li>Return a new *CompletableFuture* object</li></ul> |
+    | `thenApplyAsync(Function<T, U>)` | Same, but runs transformation asynchronously instead of running in the same thread as *supplyAsync*  |
+    | `thenAccept(Consumer<T>)`    | Consumes the result (no return value). |
+    | `thenAcceptAsync(Consumer<T>)`   | Asynchronously consumes the result. |
+    | `thenRun(Runnable)` | Runs a task after completion (ignores result). |
+    | `thenRunAsync(Runnable)`         | Same, but asynchronously. |
+
+    Example:
+    ```java
+    import java.util.concurrent.CompletableFuture;
+    import java.util.concurrent.ExecutionException;
+
+    public class CompletableFutureExample {
+        public static void main(String[] args) throws ExecutionException, InterruptedException {
+            CompletableFuture<String> future = CompletableFuture
+                .supplyAsync(() -> {
+                    System.out.println("Supplying value in: " + Thread.currentThread().getName());
+                    return "Hello";
+                })
+                .thenApplyAsync(value -> {
+                    System.out.println("Transforming value in: " + Thread.currentThread().getName());
+                    return value + " World!";
+                });
+
+            // Block and get the final result
+            String result = future.get();
+            System.out.println("Final Result: " + result);
+        }
+    }
+    ```
+    Output:
+    ```yaml
+    Supplying value in: ForkJoinPool.commonPool-worker-1
+    Transforming value in: ForkJoinPool.commonPool-worker-2
+    Final Result: Hello World!
+    ```
+    - `supplyAsync()` runs a supplier in a background thread (non-blocking).
+    - `thenApplyAsync()` transforms the result asynchronously, again using a thread from the common pool.
+    - This allows both computation stages to run in parallel if possible.
+
+3. Combining Futures
+
+    | Method      | Description        |
+    | ----------- | ------------------- |
+    | `thenCombine(CompletableFuture<U>, BiFunction<T, U, R>)` | Combines results of two futures.                  |
+    | `thenAcceptBoth(CompletableFuture<U>, BiConsumer<T, U>)` | Consumes results of two futures. |
+    | `runAfterBoth(CompletableFuture, Runnable)`  | Runs a task after both complete (ignores result). |
+
+4. Waiting for Multiple Futures
+    | Method  | Description    |
+    | -------------- | ----------------------- |
+    | `allOf(CompletableFuture...)` | Waits for **all** futures to complete. Returns `CompletableFuture<Void>`.|
+    | `anyOf(CompletableFuture...)` | Completes when **any one** future completes. Returns `CompletableFuture<Object>`. |
+
+5. Exception Handling
+    | Method                                   | Description                                        |
+    | ---------------------------------------- | -------------------------------------------------- |
+    | `exceptionally(Function<Throwable, T>)`  | Provides fallback value on exception.              |
+    | `handle(BiFunction<T, Throwable, U>)`    | Handles both result and exception.                 |
+    | `whenComplete(BiConsumer<T, Throwable>)` | Executes after completion (doesn’t change result). |
+    | `whenCompleteAsync(...)`                 | Async version of `whenComplete`.                   |
+
+6. Manually Completing Futures
+    | Method                             | Description                                         |
+    | ---------------------------------- | --------------------------------------------------- |
+    | `complete(T value)`                | Completes the future manually with a value.         |
+    | `completeExceptionally(Throwable)` | Completes with an exception.                        |
+    | `obtrudeValue(T)`                  | Forcibly sets a result (overrides existing result). |
+    | `obtrudeException(Throwable)`      | Forcibly sets an exception.                         |
+
+7. Result Retrieval
+    | Method                       | Description                                             |
+    | ---------------------------- | ------------------------------------------------------- |
+    | `get()`                      | Blocks and waits for result. Throws checked exceptions. |
+    | `join()`                     | Similar to `get()` but throws unchecked exceptions.     |
+    | `getNow(T defaultValue)`     | Returns result if completed, else default.              |
+    | `isDone()`                   | Checks if the task is finished.                         |
+    | `isCompletedExceptionally()` | Checks if completed with exception.                     |
+
+8. Timeout Handling
+    | Method                                 | Description                              |
+    | -------------------------------------- | ---------------------------------------- |
+    | `orTimeout(long, TimeUnit)`            | Fails if not completed in time.          |
+    | `completeOnTimeout(T, long, TimeUnit)` | Completes with default value on timeout. |
 

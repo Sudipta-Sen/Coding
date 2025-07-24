@@ -241,11 +241,12 @@
 > m. [Threadpool](#threadpool)<br>
 >> i. [ThreadPoolExecutor](#threadpoolexecutor)<br>
 >> ii. [Determining optimal thread pool size](#determining-optimal-thread-pool-size)<br>
->> iii.. [Executors](#executors)<br>
->> iv.. [Future](#future)<br>
+>> iv. [Future](#future)<br>
 >> v. [Callable](#callable)<br>
 >> vi. [Completablefuture](#completablefuture)<br>
 
+> n. [Executors](#executors)<br>
+> o. [ForkJoinPool](#forkjoinpool)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -6213,33 +6214,6 @@ Task 3 executed by Worker-Thread-2
     | **GC Behavior**                | More threads ⇒ more GC pressure                |
     | **Response Time**              | SLAs or low-latency requirements               |
 
-#### Executors
-
-Executors is a **final utility class** provided in the `java.util.concurrent` that simplifies the creation of thread pools and executor services, making it easier to manage thread-based tasks in concurrent applications.
-
-- Common Factory Methods
-    | Method   | Description        |
-    | -------- | ------------------ |
-    | `Executors.newSingleThreadExecutor()`         | Creates an executor with a single worker thread.  |
-    | `Executors.newFixedThreadPool(int n)`         | Creates a thread pool with a fixed number of threads.  |
-    | `Executors.newCachedThreadPool()`             | Creates a thread pool that creates new threads as needed and reuses previously constructed threads. |
-    | `Executors.newScheduledThreadPool(int n)`     | Creates a thread pool that can schedule commands to run after a delay or periodically.  |
-    | `Executors.newWorkStealingPool()` *(Java 8+)* | Creates a pool using work-stealing algorithm for parallelism.  |
-
-- Behind the Scenes
-
-    All methods in `Executors` internally create instances of `ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`, etc., with preconfigured parameters.
-    
-    For Example:
-    ```java
-    Executors.newFixedThreadPool(4);
-    ```
-    Internally creates:
-    ```java
-    new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-    ```
-
-    Although `Executors` is convenient, it's often better to use `ThreadPoolExecutor` directly in production code for more fine-grained control (e.g., custom thread factory, rejection policy, etc.).
 
 #### Future
 
@@ -6538,3 +6512,177 @@ Key Features:
     | `orTimeout(long, TimeUnit)`            | Fails if not completed in time.          |
     | `completeOnTimeout(T, long, TimeUnit)` | Completes with default value on timeout. |
 
+### Executors
+
+Executors is a **final utility class** provided in the `java.util.concurrent` that simplifies the creation of thread pools and executor services, making it easier to manage thread-based tasks in concurrent applications.
+
+- Common Factory Methods
+    | Method   | Description        |
+    | -------- | ------------------ |
+    | `Executors.newSingleThreadExecutor()`         | Creates an executor with a single worker thread.  |
+    | `Executors.newFixedThreadPool(int n)`         | Creates a thread pool with a fixed number of threads.  |
+    | `Executors.newCachedThreadPool()`             | Creates a thread pool that creates new threads as needed (dynamically) and reuses previously constructed threads. |
+    | `Executors.newScheduledThreadPool(int n)`     | Creates a thread pool that can schedule commands to run after a delay or periodically.  |
+    | `Executors.newWorkStealingPool()` *(Java 8+)* | Creates a pool using work-stealing algorithm for parallelism.  |
+
+- Behind the Scenes
+
+    All methods in `Executors` internally create instances of `ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`, etc., with preconfigured parameters.
+    
+    For Example:
+    ```java
+    ExecutorService poolExe1 = Executors.newFixedThreadPool(4);
+    poolExe1.submit(()-> "this is a sync task");
+    ```
+    Internally creates:
+    ```java
+    new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+    ```
+
+    Although `Executors` is convenient, it's often better to use `ThreadPoolExecutor` directly in production code for more fine-grained control (e.g., custom thread factory, rejection policy, etc.).
+
+- Properties for `newSingleThreadExecutor`
+    | Min and Max Pool | <ul><li> Min 1</li><li>Max: 1</li></ul> |
+    | ----- | ---- |
+    | Queue Size | Unblocking Queue |
+    | Thread Alive when idle | Yes |
+    | When to use | When need to process tasks sequentially |
+    | Disadvantage | No concurrency | 
+
+- Properties for `newFixedThreadPool`
+
+    | Min and Max Pool | Same |
+    | ----- | ---- |
+    | Queue Size | Unbounded Queue |
+    | Thread Alive when idle | Yes |
+    | When to use | Exact info, how many Async task in needed |
+    | Disadvantage | Not good when workload is heavy, as it will lead to limited concurrency | 
+    
+- Properties for `newCachedThreadPool`
+    | Min and Max Pool | <ul><li> Min 0</li><li>Max: Integer.MAX_VALUE</li></ul> |
+    | ----- | ---- |
+    | Queue Size | Blocking Queue with size 0 |
+    | Thread Alive when idle | 60 sec |
+    | When to use | Good for handling burst of short lived tasks |
+    | Disadvantage | If many long lived tasks got submitted rapidly, ThreadPool can create so many thereads which might lead to increase memory usage.  | 
+
+
+### ForkJoinPool
+
+`ForkJoinPool` is a **specialized ExecutorService** designed to efficiently run tasks that can be **split (forked)** into smaller subtasks(subtasks can also be divided into more subtasks) and later **combined (joined)** for the final result — an implementation of the **Fork/Join framework**.
+
+- Core Components
+    - **ForkJoinPool** – the thread pool that executes `ForkJoinTasks`.
+    - **ForkJoinTask** – an abstract class representing a task; extended by:
+        - `RecursiveAction` – for tasks not returning a result.
+        - `RecursiveTask<V>` – for tasks returning a result.
+
+ForkJoinPool uses a scheduling strategy called **work stealing** to achieve efficient parallel task execution.
+
+#### **Motivation for a new strategy:**
+
+In a traditional thread pool (e.g., `ExecutorService`), tasks are submitted to a shared queue, and threads pull from that queue. This can cause:
+- **Contention** on the shared queue
+- **Uneven load** where some threads are overloaded while others are idle
+
+To solve this, **Work Stealing** assigns **a separate task queue to each thread**, and allows **idle threads to steal tasks from others.**
+
+#### **How It Works (Work Stealing)**
+1. Each Worker Has Its Own Deque
+    - Tasks are **pushed and popped** from the **head** of the deque by the owning thread (LIFO).
+    - This is ideal for **recursive task execution** (depth-first), helping with **cache locality**.
+2. Stealing Happens From the Tail
+    - If a thread’s queue is empty, it becomes idle.
+    - Instead of waiting, it randomly picks another worker and tries to steal a task from the tail of that thread’s deque (FIFO).
+    - This avoids contention, because:
+        - The owner accesses head
+        - The stealer accesses tail
+        - Both ends of the deque are used independently
+
+#### **How ForkJoinPool Divides and Executes Tasks**
+
+The basic idea is - **Divide a large task into smaller subtasks until a threshold is met**, then solve each subtask and combine results (for `RecursiveTask`), or perform side-effects (for `RecursiveAction`).
+
+Step-by-step Execution Flow:
+
+1. Submit a task to the `ForkJoinPool` using `invoke()`, `execute()`, or `submit()`
+2. In the task's `compute()` method:
+    - If the problem is large, split it into smaller subtasks
+    - Fork each subtask (which schedules them to the pool)
+    - Optionally join() the subtasks (waits for their results)
+    - Combine results if needed
+3. The pool handles execution using work-stealing, balancing load between threads
+
+Example — Using `RecursiveTask`:
+```java
+import java.util.concurrent.*;
+
+class SumTask extends RecursiveTask<Integer> {
+    int[] arr;
+    int start, end;
+
+    public SumTask(int[] arr, int start, int end) {
+        this.arr = arr;
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    protected Integer compute() {
+        if (end - start <= 2) { // base condition
+            int sum = 0;
+            for (int i = start; i < end; i++) sum += arr[i];
+            return sum;
+        } else {
+            int mid = (start + end) / 2;
+            SumTask left = new SumTask(arr, start, mid);
+            SumTask right = new SumTask(arr, mid, end);
+            left.fork(); // asynchronously execute left task, dividing the task
+            int rightResult = right.compute(); // directly compute right
+            int leftResult = left.join(); // wait for left  subtask to finish
+            return leftResult + rightResult;
+        }
+    }
+}
+```
+Usage:
+```java
+ForkJoinPool pool = new ForkJoinPool();
+int[] array = {1, 2, 3, 4, 5, 6};
+SumTask task = new SumTask(array, 0, array.length);
+int result = pool.invoke(task);
+System.out.println(result); // prints 21
+```
+
+Example — Using `RecursiveAction`:
+```java
+import java.util.concurrent.*;
+
+class PrintTask extends RecursiveAction {
+    int start, end;
+
+    public PrintTask(int start, int end) {
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    protected void compute() {
+        if (end - start <= 3) {
+            for (int i = start; i < end; i++) {
+                System.out.println("Value: " + i);
+            }
+        } else {
+            int mid = (start + end) / 2;
+            PrintTask left = new PrintTask(start, mid);
+            PrintTask right = new PrintTask(mid, end);
+            invokeAll(left, right); // fork both tasks and wait
+        }
+    }
+}
+```
+Usage:
+```java
+ForkJoinPool pool = new ForkJoinPool();
+pool.invoke(new PrintTask(0, 10));
+```

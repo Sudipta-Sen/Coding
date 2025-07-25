@@ -246,7 +246,19 @@
 >> vi. [Completablefuture](#completablefuture)<br>
 
 > n. [Executors](#executors)<br>
+>> i. [Behind the scenes](#behind-the-scenes)<br>
+>> ii. [newcachedthreadpool properties](#properties-for-newcachedthreadpool)<br>
+>> iii. [newfixedthreadpool properties](#properties-for-newfixedthreadpool)<br>
+>> iv. [newsinglethreadexecutor properties](#properties-for-newsinglethreadexecutor)<br>
+> v. [awaittermination](#awaittermination)<br>
+
 > o. [ForkJoinPool](#forkjoinpool)<br>
+>> i. [Motivation for a new strategy](#motivation-for-a-new-strategy)<br>
+>> ii. [Work Stealing](#how-it-works-work-stealing)<br>
+>> ii. [Divides and executes strategy](#how-forkjoinpool-divides-and-executes-tasks)<br>
+
+> p. [ScheduledThreadPoolExecutor](#scheduledthreadpoolexecutor)<br>
+> q. [ThreadLocal](#threadlocal)<br>
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -6525,46 +6537,101 @@ Executors is a **final utility class** provided in the `java.util.concurrent` th
     | `Executors.newScheduledThreadPool(int n)`     | Creates a thread pool that can schedule commands to run after a delay or periodically.  |
     | `Executors.newWorkStealingPool()` *(Java 8+)* | Creates a pool using work-stealing algorithm for parallelism.  |
 
-- Behind the Scenes
+#### Behind the Scenes
 
-    All methods in `Executors` internally create instances of `ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`, etc., with preconfigured parameters.
+All methods in `Executors` internally create instances of `ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`, etc., with preconfigured parameters.
+
+For Example:
+```java
+ExecutorService poolExe1 = Executors.newFixedThreadPool(4);
+poolExe1.submit(()-> "this is a sync task");
+```
+Internally creates:
+```java
+new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+```
+
+Although `Executors` is convenient, it's often better to use `ThreadPoolExecutor` directly in production code for more fine-grained control (e.g., custom thread factory, rejection policy, etc.).
+
+#### Properties for `newSingleThreadExecutor`
+| Min and Max Pool | <ul><li> Min 1</li><li>Max: 1</li></ul> |
+| ----- | ---- |
+| Queue Size | Unblocking Queue |
+| Thread Alive when idle | Yes |
+| When to use | When need to process tasks sequentially |
+| Disadvantage | No concurrency | 
+
+#### Properties for `newFixedThreadPool`
+
+| Min and Max Pool | Same |
+| ----- | ---- |
+| Queue Size | Unbounded Queue |
+| Thread Alive when idle | Yes |
+| When to use | Exact info, how many Async task in needed |
+| Disadvantage | Not good when workload is heavy, as it will lead to limited concurrency | 
     
-    For Example:
-    ```java
-    ExecutorService poolExe1 = Executors.newFixedThreadPool(4);
-    poolExe1.submit(()-> "this is a sync task");
-    ```
-    Internally creates:
-    ```java
-    new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-    ```
+#### Properties for `newCachedThreadPool`
+| Min and Max Pool | <ul><li> Min 0</li><li>Max: Integer.MAX_VALUE</li></ul> |
+| ----- | ---- |
+| Queue Size | Blocking Queue with size 0 |
+| Thread Alive when idle | 60 sec |
+| When to use | Good for handling burst of short lived tasks |
+| Disadvantage | If many long lived tasks got submitted rapidly, ThreadPool can create so many thereads which might lead to increase memory usage.  | 
 
-    Although `Executors` is convenient, it's often better to use `ThreadPoolExecutor` directly in production code for more fine-grained control (e.g., custom thread factory, rejection policy, etc.).
+#### awaitTermination
 
-- Properties for `newSingleThreadExecutor`
-    | Min and Max Pool | <ul><li> Min 1</li><li>Max: 1</li></ul> |
-    | ----- | ---- |
-    | Queue Size | Unblocking Queue |
-    | Thread Alive when idle | Yes |
-    | When to use | When need to process tasks sequentially |
-    | Disadvantage | No concurrency | 
+`awaitTermination()` is a method used in conjunction with the `shutdown()` or `shutdownNow()` method of `ExecutorService` to wait for all submitted tasks to complete.
 
-- Properties for `newFixedThreadPool`
+After we call `shutdown()` to initiate an orderly shutdown (no new tasks accepted, but previously submitted tasks continue to execute), we can use awaitTermination() to:
+- Block the current thread until:
+    - All tasks have completed, or
+    - A timeout occurs, or
+    - The current thread is interrupted
 
-    | Min and Max Pool | Same |
-    | ----- | ---- |
-    | Queue Size | Unbounded Queue |
-    | Thread Alive when idle | Yes |
-    | When to use | Exact info, how many Async task in needed |
-    | Disadvantage | Not good when workload is heavy, as it will lead to limited concurrency | 
-    
-- Properties for `newCachedThreadPool`
-    | Min and Max Pool | <ul><li> Min 0</li><li>Max: Integer.MAX_VALUE</li></ul> |
-    | ----- | ---- |
-    | Queue Size | Blocking Queue with size 0 |
-    | Thread Alive when idle | 60 sec |
-    | When to use | Good for handling burst of short lived tasks |
-    | Disadvantage | If many long lived tasks got submitted rapidly, ThreadPool can create so many thereads which might lead to increase memory usage.  | 
+Signature:
+```java
+boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException;
+```
+Usage:
+```java
+ExecutorService executor = Executors.newFixedThreadPool(2);
+
+// submit tasks
+executor.submit(() -> {
+    System.out.println("Task 1 started");
+    Thread.sleep(2000);
+    System.out.println("Task 1 completed");
+});
+
+executor.submit(() -> {
+    System.out.println("Task 2 started");
+    Thread.sleep(1000);
+    System.out.println("Task 2 completed");
+});
+
+// initiate shutdown
+executor.shutdown();
+
+// wait for termination
+try {
+    if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        System.out.println("Forcing shutdown due to timeout.");
+        executor.shutdownNow();
+    } else {
+        System.out.println("All tasks completed.");
+    }
+} catch (InterruptedException e) {
+    System.out.println("Interrupted while waiting. Forcing shutdown.");
+    executor.shutdownNow();
+}
+```
+- Difference Between `shutdown()` and `awaitTermination()`
+
+    | Method               | Purpose                                                   |
+    | -------------------- | --------------------------------------------------------- |
+    | `shutdown()`         | Initiates a graceful shutdown (no new tasks accepted)     |
+    | `shutdownNow()`      | Attempts to stop all actively executing tasks immediately |
+    | `awaitTermination()` | Waits for the executor to finish termination process      |
 
 
 ### ForkJoinPool
@@ -6686,3 +6753,126 @@ Usage:
 ForkJoinPool pool = new ForkJoinPool();
 pool.invoke(new PrintTask(0, 10));
 ```
+
+### ScheduledThreadPoolExecutor
+
+`ScheduledThreadPoolExecutor` is a subclass of `ThreadPoolExecutor` that is used to **schedule tasks to run after a delay or repeatedly at a fixed rate or delay**.
+
+It implements the `ScheduledExecutorService` interface and is commonly used when you need:
+- One-time delayed execution
+- Periodic task execution (like cron jobs)
+
+- Basic Declaration
+    ```java
+    ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(int corePoolSize);
+    ```
+    Or via factory method:
+    ```java
+    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(int corePoolSize);
+    ```
+
+- Key Methods of ScheduledThreadPoolExecutor
+    
+    Here are the **main methods** with descriptions and usage:
+    | Method              | Description        |
+    | ------------------- | ----------------------------- |
+    | `schedule(Runnable command, long delay, TimeUnit unit)`                                  | Schedules a one-shot task after a fixed delay |
+    | `schedule(Callable<V> callable, long delay, TimeUnit unit)`                              | Same as above, but returns a result via `Future<V>` |
+    | `scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)`   | Repeats a task with a fixed **rate** — next execution starts **after the previous start time + period**, regardless of how long it took |
+    | `scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit)` | Repeats a task with a fixed **delay** — next execution starts **after the previous task ends + delay** |
+    | `shutdown()`         | Initiates graceful shutdown — no new tasks accepted |
+    | `shutdownNow()`      | Attempts to stop all tasks immediately  |
+    | `awaitTermination(long timeout, TimeUnit unit)`   | Blocks until all tasks complete or timeout occurs  |
+    | `getQueue()`      | Returns the queue of tasks waiting to be executed |
+    | `getCorePoolSize()`, `setCorePoolSize(int size)`                                         | Gets or sets the number of threads to keep in the pool   |
+    | `getMaximumPoolSize()`, `setMaximumPoolSize(int size)`                                   | Not typically used with ScheduledThreadPoolExecutor; it always equals core pool siz  |
+    | `purge()`   | Removes cancelled tasks from the queue to free resources  |
+
+### ThreadLocal
+
+`ThreadLocal` class provides **thread-local variables**. Each thread accessing such a variable via its `get()` or `set()` method has its own **independent copy** of the variable.
+
+This is particularly useful in **multithreaded environments** where we want to:
+- Avoid synchronization
+- Maintain per-thread state (e.g., user sessions, database connections, request contexts)
+
+Declaration
+```java
+ThreadLocal<Type> threadLocalVar = new ThreadLocal<>();
+```
+We can also initialize it with a default value using:
+```java
+ThreadLocal<Type> threadLocalVar = ThreadLocal.withInitial(() -> initialValue);
+```
+
+- Basic Operations
+    | Method                               | Description                                                |
+    | ------------------------------------ | ---------------------------------------------------------- |
+    | `get()`                              | Returns the current thread’s copy of the variable          |
+    | `set(T value)`                       | Sets the current thread’s copy to the specified value      |
+    | `remove()`                           | Removes the current thread’s value to prevent memory leaks |
+    | `withInitial(Supplier<? extends T>)` | Factory method to create ThreadLocal with default value    |
+
+- Example:
+    ```java
+    import java.util.concurrent.ExecutorService;
+    import java.util.concurrent.Executors;
+
+    public class ThreadLocalWithThreadPool {
+
+        // ThreadLocal to hold String values per thread
+        private static ThreadLocal<String> threadLocal = new ThreadLocal<>();
+
+        public static void main(String[] args) {
+            // Fixed thread pool with 3 threads
+            ExecutorService executor = Executors.newFixedThreadPool(3);
+
+            Runnable task1 = () -> {
+                threadLocal.set("Value for Thread 1");
+                System.out.println(Thread.currentThread().getName() + " set: " + threadLocal.get());
+                threadLocal.remove(); // best practice to avoid memory leaks
+            };
+
+            Runnable task2 = () -> {
+                threadLocal.set("Value for Thread 2");
+                System.out.println(Thread.currentThread().getName() + " set: " + threadLocal.get());
+                threadLocal.remove();
+            };
+
+            Runnable task3 = () -> {
+                threadLocal.set("Value for Thread 3");
+                System.out.println(Thread.currentThread().getName() + " set: " + threadLocal.get());
+                threadLocal.remove();
+            };
+            
+            threadLocal.set("Value for Thread 4");
+
+            // Submit tasks to thread pool
+            executor.submit(task1);
+            executor.submit(task2);
+            executor.submit(task3);
+
+            // Shutdown executor
+            executor.shutdown();
+            
+            System.out.println(Thread.currentThread().getName() + " set: " + threadLocal.get());
+        }
+    }
+    ```
+    Output:
+    ```bash
+    pool-1-thread-1 set: Value for Thread 1
+    main set: Value for Thread 4
+    pool-1-thread-2 set: Value for Thread 2
+    pool-1-thread-3 set: Value for Thread 3
+    ```
+    - Notes:
+        - `ThreadLocal<String>` stores one `String` per thread.
+        - The same `threadLocal` reference is shared, but internally it maintains a per-thread map.
+        - `threadLocal.remove()` is used at the end to prevent memory leaks, especially important in thread pools where threads are reused.
+
+- Thread Isolation
+    Every thread has a separate copy of the ThreadLocal variable, so:
+    - There is no interference between threads
+    - It avoids the need for synchronized access
+    - Useful for stateless objects to behave like stateful per-thread

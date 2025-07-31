@@ -259,6 +259,10 @@
 
 > p. [ScheduledThreadPoolExecutor](#scheduledthreadpoolexecutor)<br>
 > q. [ThreadLocal](#threadlocal)<br>
+> r. [Virtual threads vs platform threads](#virtual-threads-vs-platform-threads)<br>
+>> i. [Ways to create virtual threads](#ways-to-create-virtual-threads)<br>
+
+13. [Project Lombok](#project-lombok)
 ## OOPS Concepts
 
 ### Overview Of OOPS
@@ -6869,10 +6873,197 @@ ThreadLocal<Type> threadLocalVar = ThreadLocal.withInitial(() -> initialValue);
     - Notes:
         - `ThreadLocal<String>` stores one `String` per thread.
         - The same `threadLocal` reference is shared, but internally it maintains a per-thread map.
-        - `threadLocal.remove()` is used at the end to prevent memory leaks, especially important in thread pools where threads are reused.
+        - `threadLocal.remove()` is used at the end to prevent memory leaks, especially important in thread pools where threads are reused. 
+            
+            If not properly cleaned up, when the thread begins executing another task, the value will remain set to its earlier state, potentially leading to unintended behavior or data inconsistency.
 
 - Thread Isolation
     Every thread has a separate copy of the ThreadLocal variable, so:
     - There is no interference between threads
     - It avoids the need for synchronized access
     - Useful for stateless objects to behave like stateful per-thread
+
+### Virtual Threads vs Platform Threads
+
+Java introduced Virtual Threads in Project Loom to address the scalability limitations of traditional Platform Threads.
+
+1. Platform Threads
+    - Definition: One-to-one mapping with the underlying OS thread (whatever we have done till now)
+    - Managed by: Operating System.
+    - Characteristics:
+        - Expensive to create and block.
+        - Limited in number (typically thousands).
+        - Blocking operations (e.g., I/O) tie up OS resources.
+    - **Use Case:** Suitable for CPU-bound tasks or low-concurrency applications.
+    - Disadvantage: 
+        - Creating and destroying platform threads is relatively slow, as it involves costly system calls. This is why thread pools are typically used to manage and reuse threads efficiently.
+        - In the case of **I/O-bound operations**, a platform thread remains blocked until the I/O operation completes, leading to inefficient resource utilization under high concurrency.
+
+2. Virtual Threads
+    - Definition: Lightweight threads managed by the JVM rather than the OS. Many vitural threads will be managed by one OS thread.
+    - Managed by: Java Virtual Machine.
+    - Characteristics:
+        - Extremely cheap to create (millions can be spawned).
+        - Blocking operations (like I/O) do not block the carrier thread. The OS thread will run other virtual threads while one virtual thread is waiting for I/O.
+        - Run on a small pool of OS threads (called carrier threads).
+        - Ideal for high-throughput concurrent applications (e.g., servers).
+    - Use Case: Highly concurrent applications like REST APIs, database access layers, or reactive services. Use to get higher throughput not latency.
+    - Disadvantage:
+        - No control over OS thread.
+
+#### Ways to create Virtual Threads
+
+1. Using `Thread.ofVirtual().start(Runnable)`
+
+    This starts a virtual thread immediately:
+
+    Syntax:
+    ```java
+    public static Thread startVirtualThread(Runnable task)
+    ```
+
+    Example1:
+    ```java
+    Thread thread = Thread.ofVirtual().start(() -> {
+        System.out.println("Running in a virtual thread");
+    });
+    ```
+
+    Example2:
+    ```java
+    public class VirtualThreadExample {
+        public static void main(String[] args) {
+            Runnable task = () -> {
+                System.out.println("Running in virtual thread: " + Thread.currentThread());
+            };
+
+            Thread.startVirtualThread(task);
+        }
+    }
+    ```
+
+2.  Using `Thread.ofVirtual().unstarted(Runnable)`
+
+    Creates a virtual thread, but does not start it immediately:
+
+    Syntax:
+    ```java
+    public static Thread.Builder.OfVirtual Thread.ofVirtual()
+    ```
+    - Returns a builder (`Thread.Builder.OfVirtual`) for creating virtual threads.
+    
+    ```java
+    public Thread unstarted(Runnable task)
+    ```
+
+    Example:
+   
+    ```java
+    Thread thread = Thread.ofVirtual().unstarted(() -> {
+        System.out.println("Running in a virtual thread");
+    });
+    thread.start();
+    ```
+
+3.  Using `Executors.newVirtualThreadPerTaskExecutor()`
+    
+    Creates a new **ExecutorService** for **each submitted task** to a new virtual thread, similar to a thread pool
+
+    Syntax:
+    ```java
+    public static ExecutorService newVirtualThreadPerTaskExecutor()
+    Future<?> submit(Runnable task)
+    ```
+
+    Example1:
+    ```java
+    ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    executor.submit(() -> {
+        System.out.println("Executed in a virtual thread");
+    });
+
+    executor.shutdown();
+    ```
+
+    Example2:
+    ```java
+    import java.util.concurrent.ExecutorService;
+    import java.util.concurrent.Executors;
+
+    public class VirtualThreadExample {
+
+        // Custom function to run inside virtual thread
+        public static void runTask(String taskName) {
+            System.out.println("Running " + taskName + " in thread: " + Thread.currentThread());
+            try {
+                Thread.sleep(1000); // Simulate some work
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        public static void main(String[] args) {
+            // Create a virtual thread per task executor
+            try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                for (int i = 1; i <= 5; i++) {
+                    final String taskName = "Task-" + i;
+                    executor.submit(() -> runTask(taskName));
+                }
+            } // Executor is automatically closed here (try-with-resources)
+        }
+    }
+    ```
+
+## Project Lombok
+
+Project Lombok is a Java library that helps reduce **boilerplate code** by automatically generating commonly used code such as getters, setters, constructors, `toString()`, `equals()`, `hashCode()`, and more during compilation using annotations.
+
+- **Key Features & Annotations**
+    | Annotation                 | Description      |
+    | -------------------------- | ------------------------------- |
+    | `@Getter` / `@Setter`      | Automatically generates getter/setter methods for fields.   |
+    | `@ToString`                | Generates a `toString()` method using class fields.   |
+    | `@EqualsAndHashCode`       | Generates `equals()` and `hashCode()` methods.   |
+    | `@NoArgsConstructor`       | Generates a no-argument constructor.   |
+    | `@AllArgsConstructor`      | Generates a constructor with all class fields.   |
+    | `@RequiredArgsConstructor` | Constructor with final or `@NonNull` fields.      |
+    | `@Data`                    | Shortcut for `@Getter`, `@Setter`, `@ToString`, `@EqualsAndHashCode`, `@RequiredArgsConstructor`. |
+    | `@Builder`                 | Implements the Builder pattern automatically.    |
+    | `@Slf4j`                   | Injects a `private static final Logger log = LoggerFactory.getLogger(...)`  |
+    | `@SneakyThrows`            | Allows throwing checked exceptions without declaring them.  |
+
+- `@NonNull`: Aomatically generate null checks for method parameters or fields.
+
+    Usage
+    1. In Constructor or Method Parameters
+        ```java
+        import lombok.NonNull;
+
+        public class Account {
+            private String id;
+
+            public Account(@NonNull String id) {
+                this.id = id;
+            }
+        }
+        ```
+        ⟶ Lombok adds the following null-check at compile time:
+        ```java
+        if (id == null) {
+            throw new NullPointerException("id is marked non-null but is null");
+        }
+        ```
+        In Fields
+
+        When used with `@Setter` or `@RequiredArgsConstructor`, it ensures null safety.
+        ```java
+        import lombok.NonNull;
+        import lombok.RequiredArgsConstructor;
+
+        @RequiredArgsConstructor
+        public class User {
+            @NonNull
+            private final String name;
+        }
+        ```

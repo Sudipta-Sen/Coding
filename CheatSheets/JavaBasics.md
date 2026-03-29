@@ -2534,6 +2534,40 @@ There are three type of wild cards --
         }
     }
     ```
+- In the prevoius example we might think what is the difference betweeen printing `today` and `today.name()` as both prints its enum value.
+    ```java
+    Day today = Day.TUESDAY;
+    System.out.println(today);       // calls toString()
+    System.out.println(today.name()); // calls Enum.name()
+    ```
+    - `today` (implicitly calls `toString()`)
+        - When we `System.out.println(today)`, Java calls `toString()` on the enum constant.
+        - By default, `toString()` in Enum returns the same as `name()`, unless you override it in your enum.
+        - If we override `toString()` in `Day`, it can print something custom (e.g., `"Tue"` instead of `"TUESDAY"`).
+    - `today.name()`
+        - Always returns the exact identifier of the enum constant as declared in the enum, in uppercase and exactly as written in the source code.
+        - **Cannot be overridden** — it’s final in `java.lang.Enum`.
+        - Example: `TUESDAY.name() → "TUESDAY"`
+    - Example showing the difference
+        ```java
+        enum Day {
+            MONDAY, TUESDAY;
+
+            @Override
+            public String toString() {
+                return "Day: " + name().toLowerCase();
+            }
+        }
+
+        public class EnumDemo {
+            public static void main(String[] args) {
+                Day today = Day.TUESDAY;
+                System.out.println(today);        // Day: tuesday  (custom toString)
+                System.out.println(today.name()); // TUESDAY      (original enum name)
+            }
+        }
+        ```
+
 - Enum can have variables, constructor, methods.
 - Enum can have custom values and static lookup.
     ```java
